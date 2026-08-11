@@ -1,0 +1,358 @@
+/* ============================================================
+   University Driver - Light Theme
+   ============================================================ */
+
+.root {
+    -fx-font-family: "Helvetica Neue", "Segoe UI", Arial, sans-serif;
+    -fx-font-size: 13px;
+
+    /* Re-derive every built-in control's default text color from these, so
+       controls this stylesheet does not style by hand (combo-box popups, the
+       date-picker calendar popup, tooltips, check/radio boxes, ...) still get
+       correct dark-on-light contrast instead of falling back to Modena's own
+       light-theme text color. */
+    -fx-base: #f5f6f8;
+    -fx-background: #f5f6f8;
+    -fx-control-inner-background: #ffffff;
+    -fx-control-inner-background-alt: #fafbfc;
+    -fx-text-base-color: #1f2430;
+    -fx-text-inner-color: #1f2430;
+    -fx-light-text-color: #1f2430;
+    -fx-dark-text-color: #1f2430;
+    -fx-mid-text-color: #1f2430;
+    -fx-selection-bar-text: #1f2430;
+    -fx-accent: #4f46e5;
+    -fx-focus-color: #4f46e5;
+    -fx-faint-focus-color: rgba(79, 70, 229, 0.25);
+
+    -fx-background-color: #f5f6f8;
+    -fx-text-fill: #1f2430;
+}
+
+.label {
+    -fx-text-fill: #1f2430;
+}
+
+/* ---------- Top bar ---------- */
+
+.top-bar {
+    -fx-background-color: #ffffff;
+    -fx-border-color: transparent transparent #e2e5ea transparent;
+    -fx-border-width: 0 0 1 0;
+}
+
+.app-title {
+    -fx-font-size: 15px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #1f2430;
+}
+
+.theme-toggle {
+    -fx-background-color: #ffffff;
+    -fx-border-color: #dfe2e8;
+    -fx-border-radius: 20;
+    -fx-background-radius: 20;
+    -fx-padding: 6 16;
+    -fx-text-fill: #1f2430;
+    -fx-cursor: hand;
+}
+
+.theme-toggle:hover {
+    -fx-background-color: #f0f1f5;
+}
+
+/* ---------- Tabs ---------- */
+
+.tab-pane .tab-header-area {
+    -fx-padding: 10 10 0 10;
+}
+
+.tab-pane .tab-header-background {
+    -fx-background-color: #f5f6f8;
+}
+
+.tab-pane .tab {
+    -fx-background-color: transparent;
+    -fx-background-radius: 8 8 0 0;
+    -fx-padding: 8 18;
+}
+
+.tab-pane .tab:hover {
+    -fx-background-color: #eceef3;
+}
+
+.tab-pane .tab:selected {
+    -fx-background-color: #ffffff;
+}
+
+.tab-pane .tab .tab-label {
+    -fx-text-fill: #6b7280;
+    -fx-font-size: 13px;
+}
+
+.tab-pane .tab:selected .tab-label {
+    -fx-text-fill: #4f46e5;
+    -fx-font-weight: bold;
+}
+
+.tab-pane .tab-content-area {
+    -fx-background-color: #ffffff;
+}
+
+/* ---------- Buttons ---------- */
+
+.button {
+    -fx-background-color: #ffffff;
+    -fx-text-fill: #1f2430;
+    -fx-border-color: #dfe2e8;
+    -fx-border-radius: 6;
+    -fx-background-radius: 6;
+    -fx-padding: 6 14;
+    -fx-cursor: hand;
+}
+
+.button:hover {
+    -fx-background-color: #f0f1f5;
+}
+
+.button:pressed {
+    -fx-background-color: #e5e7ee;
+}
+
+.button:disabled {
+    -fx-opacity: 0.45;
+    -fx-cursor: default;
+}
+
+.button-primary {
+    -fx-background-color: #4f46e5;
+    -fx-text-fill: #ffffff;
+    -fx-border-color: transparent;
+}
+
+.button-primary:hover {
+    -fx-background-color: #4338ca;
+}
+
+.button-danger {
+    -fx-background-color: transparent;
+    -fx-text-fill: #dc2626;
+    -fx-border-color: #f3c6c6;
+}
+
+.button-danger:hover {
+    -fx-background-color: #fdecec;
+}
+
+/* ---------- Inputs ---------- */
+
+.text-field, .combo-box, .combo-box-base, .date-picker, .spinner, .choice-box {
+    -fx-background-color: #ffffff;
+    -fx-border-color: #dfe2e8;
+    -fx-border-radius: 6;
+    -fx-background-radius: 6;
+    -fx-padding: 5 8;
+    -fx-text-fill: #1f2430;
+}
+
+.combo-box .list-cell, .date-picker .text-field {
+    -fx-text-fill: #1f2430;
+    -fx-background-color: transparent;
+}
+
+.text-field:focused, .combo-box:focused, .date-picker:focused, .spinner:focused {
+    -fx-border-color: #4f46e5;
+}
+
+.spinner .text-field {
+    -fx-border-color: transparent;
+    -fx-background-color: transparent;
+}
+
+.list-view {
+    -fx-background-color: #ffffff;
+    -fx-border-color: #dfe2e8;
+    -fx-border-radius: 6;
+    -fx-background-radius: 6;
+}
+
+.list-cell {
+    -fx-background-color: transparent;
+    -fx-text-fill: #1f2430;
+    -fx-padding: 6 10;
+}
+
+.list-cell:filled:hover {
+    -fx-background-color: #f0f1f5;
+}
+
+.list-cell:filled:selected {
+    -fx-background-color: #e0e7ff;
+    -fx-text-fill: #1f2430;
+}
+
+/* ---------- Toolbar ---------- */
+
+.toolbar {
+    -fx-background-color: #ffffff;
+    -fx-border-color: transparent transparent #eceef3 transparent;
+    -fx-border-width: 0 0 1 0;
+}
+
+/* ---------- Table ---------- */
+
+.table-view {
+    -fx-background-color: #ffffff;
+    -fx-border-color: #e2e5ea;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+    -fx-table-cell-border-color: transparent;
+}
+
+.table-view .column-header-background {
+    -fx-background-color: #f5f6f8;
+    -fx-background-radius: 8 8 0 0;
+}
+
+.table-view .column-header, .table-view .filler {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent transparent #e2e5ea transparent;
+    -fx-size: 36;
+}
+
+.table-view .column-header .label {
+    -fx-text-fill: #6b7280;
+    -fx-font-weight: bold;
+    -fx-font-size: 11px;
+}
+
+.table-row-cell {
+    -fx-background-color: #ffffff;
+    -fx-border-color: transparent transparent #eef0f4 transparent;
+    -fx-table-cell-border-color: transparent;
+}
+
+.table-row-cell:odd {
+    -fx-background-color: #fafbfc;
+}
+
+.table-row-cell:hover {
+    -fx-background-color: #f0f1f5;
+}
+
+.table-row-cell:selected {
+    -fx-background-color: #e0e7ff;
+}
+
+.table-row-cell:selected .text {
+    -fx-fill: #1f2430;
+}
+
+.table-view .table-cell {
+    -fx-text-fill: #1f2430;
+    -fx-padding: 8 10;
+    -fx-border-color: transparent;
+}
+
+/* ---------- Dialogs ---------- */
+
+.dialog-pane {
+    -fx-background-color: #ffffff;
+}
+
+.dialog-pane .header-panel {
+    -fx-background-color: #ffffff;
+}
+
+.dialog-pane .header-panel .label {
+    -fx-text-fill: #1f2430;
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+}
+
+.dialog-pane .content.label {
+    -fx-text-fill: #1f2430;
+}
+
+.alert .header-panel {
+    -fx-background-color: #ffffff;
+}
+
+/* ---------- Menu / MenuButton ---------- */
+
+.menu-button {
+    -fx-background-color: #ffffff;
+    -fx-border-color: #dfe2e8;
+    -fx-border-radius: 6;
+    -fx-background-radius: 6;
+    -fx-padding: 6 12;
+    -fx-text-fill: #1f2430;
+}
+
+.menu-button:hover {
+    -fx-background-color: #f0f1f5;
+}
+
+.context-menu {
+    -fx-background-color: #ffffff;
+    -fx-border-color: #e2e5ea;
+    -fx-border-radius: 6;
+    -fx-background-radius: 6;
+}
+
+.menu-item .label {
+    -fx-text-fill: #1f2430;
+}
+
+.menu-item:focused {
+    -fx-background-color: #4f46e5;
+}
+
+.menu-item:focused .label {
+    -fx-text-fill: #ffffff;
+}
+
+/* ---------- Stat cards ---------- */
+
+.stat-card {
+    -fx-background-color: #ffffff;
+    -fx-border-color: #e2e5ea;
+    -fx-border-radius: 10;
+    -fx-background-radius: 10;
+    -fx-padding: 14 30;
+}
+
+.stat-value {
+    -fx-font-size: 24px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #4f46e5;
+}
+
+.stat-title {
+    -fx-text-fill: #6b7280;
+    -fx-font-size: 12px;
+}
+
+/* ---------- Scrollbar ---------- */
+
+.scroll-bar {
+    -fx-background-color: transparent;
+}
+
+.scroll-bar .track {
+    -fx-background-color: transparent;
+}
+
+.scroll-bar .thumb {
+    -fx-background-color: #d7dae0;
+    -fx-background-radius: 6;
+}
+
+.scroll-bar .thumb:hover {
+    -fx-background-color: #b7bcc6;
+}
+
+.scroll-bar .increment-button, .scroll-bar .decrement-button {
+    -fx-background-color: transparent;
+    -fx-padding: 0;
+}
