@@ -1,0 +1,42 @@
+# --- Java / Maven ---
+target/
+university-core/target/
+*.class
+hs_err_pid*.log
+replay_pid*.log
+
+# jpackage staging left behind by packaging/build-app.sh if it's interrupted
+university-core/packaging/.jpackage-input/
+university-core/packaging/.jpackage-dist/
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# --- Claude Code ---
+# settings.local.json holds machine-specific permissions/paths; CLAUDE.md and
+# settings.json (if present) stay tracked since they're meant to be shared.
+.claude/settings.local.json
+
+# --- JSON / personal data ---
+# Real academic records (grades, exams, modules) - not sample/seed data, so it
+# stays local rather than getting committed. See university-core/README.md for
+# how to seed this directory on a new machine.
+university-core/config/credentials.json
+university-core/config/database/
+
+# --- IntelliJ IDEA ---
+.idea/
+*.iml
+.claude
+
+# --- macOS ---
+.DS_Store
