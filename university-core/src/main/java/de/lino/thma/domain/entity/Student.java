@@ -4,7 +4,7 @@ import de.lino.thma.domain.EntityFactory;
 import de.lino.thma.domain.entity.profile.Profile;
 import de.lino.thma.domain.entity.semester.Semester;
 import de.lino.thma.domain.entity.semester.SemesterType;
-import de.lino.thma.persistence.EntityType;
+import de.lino.thma.domain.EntityType;
 import de.lino.thma.utility.Serialized;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;

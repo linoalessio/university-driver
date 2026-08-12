@@ -1,12 +1,13 @@
 package de.lino.thma;
 
+import de.lino.database.export.ExportCoordinator;
 import de.lino.thma.domain.EntityFactory;
-import de.lino.thma.persistence.export.ExportCoordinator;
 import de.lino.thma.ui.helper.GuiSupport;
 import de.lino.thma.ui.helper.Theme;
 import de.lino.thma.ui.tab.ModulesTab;
 import de.lino.thma.ui.tab.SemestersTab;
 import de.lino.thma.ui.tab.StatisticsTab;
+import de.lino.thma.utility.Constraints;
 import javafx.application.Application;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -21,7 +22,6 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.stage.Stage;
 
-import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
@@ -120,17 +120,21 @@ public final class UniversityGui extends Application {
     /**
      * Exports the entire local database to a timestamped zip archive in the user's
      * Downloads folder, reporting success or failure via the same blocking alert every
-     * other export in the app uses. {@link ExportCoordinator.DatabaseZipExporter} is
-     * injected into a fresh {@link ExportCoordinator} rather than called directly.
+     * other export in the app uses. A {@link ExportCoordinator.DirectoryZipExporter},
+     * bound to this application's own {@link Constraints#CONFIGURATION_PATH} and
+     * flushed via {@link EntityFactory#syncToDatabase()} beforehand, is injected into
+     * a fresh {@link ExportCoordinator} rather than called directly.
      */
     private static void exportDatabase() {
 
         final String fileName = "University Driver Backup " + LocalDateTime.now().format(BACKUP_TIMESTAMP) + ".zip";
 
         final ExportCoordinator coordinator = new ExportCoordinator();
-        coordinator.injectArchiveExporter(new ExportCoordinator.DatabaseZipExporter());
+        coordinator.injectArchiveExporter(new ExportCoordinator.DirectoryZipExporter(
+                Constraints.CONFIGURATION_PATH, () -> EntityFactory.getInstance().syncToDatabase()
+        ));
 
-        GuiSupport.runExport(() -> coordinator.exportArchive(Path.of(fileName)), fileName);
+        GuiSupport.runExport(() -> coordinator.exportArchive(Constraints.EXPORT_PATH.resolve(fileName)), fileName);
 
     }
 

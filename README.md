@@ -187,12 +187,8 @@ Every export (PDF, Excel, database backup) is written to the current user's
 de.lino.thma
 ├── Launcher                  non-JavaFX entry point for the packaged jar (see below)
 ├── UniversityGui              the JavaFX Application; top bar + tab pane
-├── domain                     EntityFactory (in-memory cache + persistence) and entities
+├── domain                     EntityFactory (in-memory cache + persistence), EntityType and entities
 │   └── entity                 Student, Profile, Semester, SemesterType, Module, Exam
-├── persistence                 EntityType registry and the export/ subpackage
-│   └── export                  ExportCoordinator, ExporterInjector, DataExporter
-│       ├── transcript            TranscriptExporter, TranscriptSection, TranscriptLegendEntry
-│       └── archiv                ArchiveExporter
 ├── ui
 │   ├── helper                  EntityTab, ColumnSpec, GuiSupport, Theme
 │   ├── tab                     top-level tabs: Modules, Semesters, Statistics
@@ -205,74 +201,21 @@ extends `javafx.application.Application` directly (misreporting "JavaFX runtime
 components are missing" even though they're present in the shaded jar) — it
 delegates straight to `UniversityGui.main(String[])`.
 
---- ---
-
-## Using `ExportCoordinator`
-
-Every export in the app — per-table PDF/Excel, the grouped "Export All Exams"
-transcript, and the zipped database backup — goes through one class,
-[`ExportCoordinator`](university-core/src/main/java/de/lino/thma/persistence/export/ExportCoordinator.java).
-It never constructs a concrete exporter itself; instead it depends only on three
-interfaces — `DataExporter` (flat tables), `TranscriptExporter` (grouped, section-based
-documents) and `ArchiveExporter` (whole-directory archives) — and a caller hands in
-whichever implementation it wants through `ExporterInjector`'s setter methods, a.k.a.
-**interface injection**. `ExportCoordinator` bundles three default implementations as
-nested classes (`TranscriptPDFExporter`, `TranscriptExcelExporter`,
-`DatabaseZipExporter`), but nothing about the coordination logic itself is specific to
-this application — a caller can inject its own `DataExporter`/`TranscriptExporter`/
-`ArchiveExporter` just as easily, from this project or another one entirely.
-
-```java
-import de.lino.thma.persistence.export.ExportCoordinator;
-import de.lino.thma.persistence.export.transcript.TranscriptLegendEntry;
-import de.lino.thma.persistence.export.transcript.TranscriptSection;
-
-import java.nio.file.Path;
-import java.util.List;
-
-// One section per semester; each inner list is one row's cell values.
-final List<TranscriptSection> sections = List.of(
-        new TranscriptSection("WiSe 24/25", List.of(
-                List.of("#1", "Grundlagen ML", "1.7", "bestanden"),
-                List.of("#2", "Datenbanksysteme", "2.3", "bestanden")
-        )),
-        new TranscriptSection("SoSe 25", List.of(
-                List.of("#3", "IAP Labor", "1.3", "bestanden")
-        ))
-);
-
-final List<TranscriptLegendEntry> gradingScale = List.of(
-        new TranscriptLegendEntry("1.0 – 1.5", "sehr gut (excellent)"),
-        new TranscriptLegendEntry("1.7 – 2.5", "gut (good)")
-);
-
-final ExportCoordinator coordinator = new ExportCoordinator();
-
-// Inject a default implementation - or supply your own DataExporter/
-// TranscriptExporter/ArchiveExporter instead, this class doesn't care which.
-coordinator.injectTranscriptExporter(new ExportCoordinator.TranscriptPDFExporter());
-coordinator.injectArchiveExporter(new ExportCoordinator.DatabaseZipExporter());
-
-// Grouped, transcript-style PDF - swap in TranscriptExcelExporter for a .xlsx instead.
-coordinator.exportTranscript(
-        "Technical University of Applied Science Mannheim",
-        List.of("Id", "Module", "Grade", "Status"),
-        sections,
-        "Grading Scale",
-        gradingScale,
-        Path.of("transcript.pdf")
-);
-
-// A full, format-agnostic backup of the local database, zipped to one file.
-coordinator.exportArchive(Path.of("backup.zip"));
-```
-
-See it wired up for real in
-[`GuiSupport.runExport`](university-core/src/main/java/de/lino/thma/ui/helper/GuiSupport.java)
+Every export (PDF/Excel table, grouped transcript, database backup) goes through
+`ExportCoordinator`, which is not part of this project's own tree — it's a generic,
+entity-agnostic mechanism shared with any application built on
+[`database-driver`](https://github.com/linoalessio/database-driver-v2): the
+`DataExporter`/`TranscriptExporter`/`ArchiveExporter` contracts live in
+`database-driver-api` (`de.lino.database.export`, `.data`, `.transcript`, `.archiv`),
+and `ExportCoordinator` itself, plus its default PDF/Excel/zip implementations, lives in
+`database-driver-plugin` (also `de.lino.database.export`). This project only binds
+those generic exporters to its own state — see
+[`GuiSupport.exportButton`](university-core/src/main/java/de/lino/thma/ui/helper/GuiSupport.java)
 (per-table exports), [`StatisticsTab.exportAllExams`](university-core/src/main/java/de/lino/thma/ui/tab/StatisticsTab.java)
 (the grouped "Export All Exams" transcript) and
 [`UniversityGui.exportDatabase`](university-core/src/main/java/de/lino/thma/UniversityGui.java)
-(the database backup button).
+(the database backup button, binding `DirectoryZipExporter` to `Constraints.CONFIGURATION_PATH`
+and `EntityFactory::syncToDatabase`).
 
 --- ---
 

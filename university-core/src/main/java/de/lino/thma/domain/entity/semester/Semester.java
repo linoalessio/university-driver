@@ -3,7 +3,7 @@ package de.lino.thma.domain.entity.semester;
 import de.lino.thma.domain.EntityFactory;
 import de.lino.thma.domain.entity.Student;
 import de.lino.thma.domain.entity.module.Exam;
-import de.lino.thma.persistence.EntityType;
+import de.lino.thma.domain.EntityType;
 import de.lino.thma.utility.Serialized;
 import de.lino.thma.domain.entity.module.Module;
 import lombok.EqualsAndHashCode;

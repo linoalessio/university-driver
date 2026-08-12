@@ -9,7 +9,6 @@ import de.lino.database.provider.DatabaseProvider;
 import de.lino.database.provider.DatabaseSection;
 import de.lino.database.provider.DatabaseType;
 import de.lino.database.provider.entity.DatabaseEntry;
-import de.lino.thma.persistence.EntityType;
 import de.lino.thma.utility.Constraints;
 import de.lino.thma.utility.Serialized;
 import de.lino.thma.utility.task.MultiTaskingFactory;

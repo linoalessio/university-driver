@@ -4,10 +4,10 @@ import de.lino.thma.UniversityGui;
 import de.lino.thma.domain.EntityFactory;
 import de.lino.thma.domain.entity.module.Exam;
 import de.lino.thma.domain.entity.profile.Profile;
-import de.lino.thma.persistence.EntityType;
-import de.lino.thma.persistence.export.ExportCoordinator;
-import de.lino.thma.persistence.export.transcript.TranscriptExporter;
-import de.lino.thma.persistence.export.transcript.TranscriptSection;
+import de.lino.database.export.ExportCoordinator;
+import de.lino.database.export.transcript.TranscriptExporter;
+import de.lino.database.export.transcript.TranscriptSection;
+import de.lino.thma.domain.EntityType;
 import de.lino.thma.utility.Constraints;
 import de.lino.thma.utility.Serialized;
 import javafx.beans.property.SimpleStringProperty;
@@ -20,7 +20,6 @@ import javafx.scene.layout.GridPane;
 import javafx.util.StringConverter;
 
 import java.io.IOException;
-import java.nio.file.Path;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
@@ -162,7 +161,7 @@ public final class GuiSupport {
         final ExportCoordinator coordinator = new ExportCoordinator();
         coordinator.injectTranscriptExporter(exporter);
 
-        runExport(() -> coordinator.exportTranscript(title, headers, List.of(section), "", List.of(), Path.of(fileName)), fileName);
+        runExport(() -> coordinator.exportTranscript(title, headers, List.of(section), "", List.of(), Constraints.EXPORT_PATH.resolve(fileName)), fileName);
 
     }
 

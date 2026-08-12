@@ -4,7 +4,7 @@ import de.lino.thma.domain.EntityFactory;
 import de.lino.thma.domain.entity.Student;
 import de.lino.thma.domain.entity.semester.Semester;
 import de.lino.thma.domain.entity.semester.SemesterType;
-import de.lino.thma.persistence.EntityType;
+import de.lino.thma.domain.EntityType;
 import de.lino.thma.ui.helper.GuiSupport;
 import de.lino.thma.ui.tab.ModulesTab;
 import de.lino.thma.ui.tab.SemestersTab;

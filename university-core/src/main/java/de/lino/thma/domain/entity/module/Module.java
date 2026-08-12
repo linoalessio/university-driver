@@ -1,7 +1,7 @@
 package de.lino.thma.domain.entity.module;
 
 import de.lino.thma.domain.EntityFactory;
-import de.lino.thma.persistence.EntityType;
+import de.lino.thma.domain.EntityType;
 import de.lino.thma.utility.Serialized;
 import lombok.*;
 

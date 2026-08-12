@@ -1,6 +1,5 @@
-package de.lino.thma.persistence;
+package de.lino.thma.domain;
 
-import de.lino.thma.domain.EntityFactory;
 import de.lino.thma.domain.entity.Student;
 import de.lino.thma.domain.entity.module.Exam;
 import de.lino.thma.domain.entity.module.Module;

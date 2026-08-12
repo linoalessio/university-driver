@@ -4,14 +4,15 @@ import de.lino.thma.domain.EntityFactory;
 import de.lino.thma.domain.entity.module.Exam;
 import de.lino.thma.domain.entity.module.Module;
 import de.lino.thma.domain.entity.semester.Semester;
+import de.lino.database.export.ExportCoordinator;
+import de.lino.database.export.transcript.TranscriptExporter;
+import de.lino.database.export.transcript.TranscriptLegendEntry;
+import de.lino.database.export.transcript.TranscriptSection;
 import de.lino.thma.domain.entity.semester.SemesterType;
-import de.lino.thma.persistence.EntityType;
-import de.lino.thma.persistence.export.ExportCoordinator;
-import de.lino.thma.persistence.export.transcript.TranscriptExporter;
-import de.lino.thma.persistence.export.transcript.TranscriptLegendEntry;
-import de.lino.thma.persistence.export.transcript.TranscriptSection;
+import de.lino.thma.domain.EntityType;
 import de.lino.thma.ui.helper.ColumnSpec;
 import de.lino.thma.ui.helper.GuiSupport;
+import de.lino.thma.utility.Constraints;
 import javafx.collections.FXCollections;
 import javafx.geometry.Insets;
 import javafx.geometry.Orientation;
@@ -27,7 +28,6 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 
-import java.nio.file.Path;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -223,7 +223,7 @@ public final class StatisticsTab extends Tab {
                 sections,
                 "Grading Scale",
                 GRADING_SCALE,
-                Path.of(fileName)
+                Constraints.EXPORT_PATH.resolve(fileName)
         ), fileName);
 
     }
