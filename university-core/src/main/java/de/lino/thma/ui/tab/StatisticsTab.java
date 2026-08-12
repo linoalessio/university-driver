@@ -5,6 +5,7 @@ import de.lino.thma.domain.entity.module.Exam;
 import de.lino.thma.domain.entity.module.Module;
 import de.lino.thma.domain.entity.semester.Semester;
 import de.lino.database.export.ExportCoordinator;
+import de.lino.database.export.transcript.PageLayout;
 import de.lino.database.export.transcript.TranscriptExporter;
 import de.lino.database.export.transcript.TranscriptLegendEntry;
 import de.lino.database.export.transcript.TranscriptSection;
@@ -39,7 +40,9 @@ import java.util.stream.Collectors;
  * button offering a grouped, transcript-style PDF ({@link ExportCoordinator.TranscriptPDFExporter}) or
  * Excel workbook ({@link ExportCoordinator.TranscriptExcelExporter}) of every registered exam
  * regardless of type, independent of the per-semester {@link Exam} export already
- * available from within each {@link de.lino.thma.ui.subtab.SemesterExamsTab}.
+ * available from within each {@link de.lino.thma.ui.subtab.SemesterExamsTab}. Both
+ * offer a page format and orientation prompt via {@link GuiSupport#promptPageLayout()}
+ * before writing the file.
  *
  * <p>A semester's {@link SemesterType} is assigned retroactively, from its own
  * {@link de.lino.thma.ui.subtab.SemesterDetailTab}; one with none assigned yet
@@ -49,7 +52,7 @@ public final class StatisticsTab extends Tab {
 
     /**
      * The German grading-scale key printed as the closing legend page of
-     * {@link #exportAllExams(String, TranscriptExporter)}'s transcript exports.
+     * {@link #exportAllExams(String, TranscriptExporter, PageLayout)}'s transcript exports.
      */
     private static final List<TranscriptLegendEntry> GRADING_SCALE = List.of(
             new TranscriptLegendEntry("1.0 / 1.3 / 1.5", "sehr gut (excellent)"),
@@ -158,10 +161,12 @@ public final class StatisticsTab extends Tab {
     private static MenuButton exportAllExamsButton() {
 
         final MenuItem pdfItem = new MenuItem("Export as PDF");
-        pdfItem.setOnAction(event -> exportAllExams(".pdf", new ExportCoordinator.TranscriptPDFExporter()));
+        pdfItem.setOnAction(event -> GuiSupport.promptPageLayout().ifPresent(layout ->
+                exportAllExams(".pdf", new ExportCoordinator.TranscriptPDFExporter(), layout)));
 
         final MenuItem excelItem = new MenuItem("Export as Excel");
-        excelItem.setOnAction(event -> exportAllExams(".xlsx", new ExportCoordinator.TranscriptExcelExporter()));
+        excelItem.setOnAction(event -> GuiSupport.promptPageLayout().ifPresent(layout ->
+                exportAllExams(".xlsx", new ExportCoordinator.TranscriptExcelExporter(), layout)));
 
         final MenuButton button = new MenuButton("Export All Exams", null, pdfItem, excelItem);
         button.getStyleClass().add("button-primary");
@@ -180,8 +185,9 @@ public final class StatisticsTab extends Tab {
      *
      * @param fileExtension the exported file's extension, including the leading dot
      * @param format the exporter to write the grouped exams through
+     * @param pageLayout the page format and orientation to render the export at
      */
-    private static void exportAllExams(final String fileExtension, final TranscriptExporter format) {
+    private static void exportAllExams(final String fileExtension, final TranscriptExporter format, final PageLayout pageLayout) {
 
         final List<Exam> exams = EntityFactory.getInstance().getEntities(EntityType.EXAMS);
         final List<Module> modules = EntityFactory.getInstance().getEntities(EntityType.MODULES);
@@ -223,13 +229,14 @@ public final class StatisticsTab extends Tab {
                 sections,
                 "Grading Scale",
                 GRADING_SCALE,
+                pageLayout,
                 Constraints.EXPORT_PATH.resolve(fileName)
         ), fileName);
 
     }
 
     /**
-     * Builds one exam's row for {@link #exportAllExams(String, TranscriptExporter)},
+     * Builds one exam's row for {@link #exportAllExams(String, TranscriptExporter, PageLayout)},
      * resolving its linked {@link Module}'s name where one exists, falling back to the
      * exam's own name otherwise.
      *

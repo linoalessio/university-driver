@@ -5,12 +5,16 @@ import de.lino.thma.domain.EntityFactory;
 import de.lino.thma.domain.entity.module.Exam;
 import de.lino.thma.domain.entity.profile.Profile;
 import de.lino.database.export.ExportCoordinator;
+import de.lino.database.export.transcript.PageFormat;
+import de.lino.database.export.transcript.PageLayout;
+import de.lino.database.export.transcript.PageOrientation;
 import de.lino.database.export.transcript.TranscriptExporter;
 import de.lino.database.export.transcript.TranscriptSection;
 import de.lino.thma.domain.EntityType;
 import de.lino.thma.utility.Constraints;
 import de.lino.thma.utility.Serialized;
 import javafx.beans.property.SimpleStringProperty;
+import javafx.collections.FXCollections;
 import javafx.event.ActionEvent;
 import javafx.geometry.Insets;
 import javafx.scene.Node;
@@ -25,6 +29,7 @@ import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -112,7 +117,8 @@ public final class GuiSupport {
     /**
      * Builds a menu button offering to export {@code table}'s current rows, laid out
      * exactly as {@code columns} describes them, to a PDF or Excel file in
-     * {@link Constraints#EXPORT_PATH}.
+     * {@link Constraints#EXPORT_PATH}, after letting the user pick a page format and
+     * orientation via {@link #promptPageLayout()}.
      *
      * @param title the export's document title, also used as the exported file's base name
      * @param table the table to export the current rows of
@@ -126,12 +132,39 @@ public final class GuiSupport {
         final Function<T, List<String>> rowMapper = row -> columns.stream().map(spec -> spec.valueOf().apply(row)).toList();
 
         final MenuItem pdfItem = new MenuItem("Export as PDF");
-        pdfItem.setOnAction(event -> runExport(new ExportCoordinator.TranscriptPDFExporter(), table.getItems(), headers, rowMapper, title, title + ".pdf"));
+        pdfItem.setOnAction(event -> promptPageLayout().ifPresent(layout ->
+                runExport(new ExportCoordinator.TranscriptPDFExporter(), table.getItems(), headers, rowMapper, title, title + ".pdf", layout)));
 
         final MenuItem excelItem = new MenuItem("Export as Excel");
-        excelItem.setOnAction(event -> runExport(new ExportCoordinator.TranscriptExcelExporter(), table.getItems(), headers, rowMapper, title, title + ".xlsx"));
+        excelItem.setOnAction(event -> promptPageLayout().ifPresent(layout ->
+                runExport(new ExportCoordinator.TranscriptExcelExporter(), table.getItems(), headers, rowMapper, title, title + ".xlsx", layout)));
 
         return new MenuButton("Export", null, pdfItem, excelItem);
+
+    }
+
+    /**
+     * Prompts for the page format and orientation a transcript export should be
+     * rendered at, via a small OK/Cancel dialog offering every {@link PageFormat} and
+     * {@link PageOrientation}, defaulted to {@link PageLayout#DEFAULT}.
+     *
+     * @return the chosen layout, or empty if the dialog was cancelled
+     */
+    public static Optional<PageLayout> promptPageLayout() {
+
+        final ComboBox<PageFormat> formatBox = new ComboBox<>(FXCollections.observableArrayList(PageFormat.values()));
+        formatBox.setValue(PageLayout.DEFAULT.format());
+
+        final ComboBox<PageOrientation> orientationBox = new ComboBox<>(FXCollections.observableArrayList(PageOrientation.values()));
+        orientationBox.setValue(PageLayout.DEFAULT.orientation());
+
+        final GridPane grid = formGrid("Page format", formatBox, "Orientation", orientationBox);
+
+        final Dialog<ButtonType> dialog = confirmationDialog("Export options", grid, event -> true);
+
+        return dialog.showAndWait()
+                .filter(ButtonType.OK::equals)
+                .map(button -> new PageLayout(formatBox.getValue(), orientationBox.getValue()));
 
     }
 
@@ -149,11 +182,12 @@ public final class GuiSupport {
      * @param rowMapper turns a row into one cell value per header, in the same order as {@code headers}
      * @param title the document title
      * @param fileName the exported file's name, resolved against {@link Constraints#EXPORT_PATH}
+     * @param pageLayout the page format and orientation to render the export at
      * @param <T> the type of the exported rows
      */
     private static <T> void runExport(
             final TranscriptExporter exporter, final List<T> rows, final List<String> headers,
-            final Function<T, List<String>> rowMapper, final String title, final String fileName
+            final Function<T, List<String>> rowMapper, final String title, final String fileName, final PageLayout pageLayout
     ) {
 
         final TranscriptSection section = new TranscriptSection("", rows.stream().map(rowMapper).toList());
@@ -161,14 +195,14 @@ public final class GuiSupport {
         final ExportCoordinator coordinator = new ExportCoordinator();
         coordinator.injectTranscriptExporter(exporter);
 
-        runExport(() -> coordinator.exportTranscript(title, headers, List.of(section), "", List.of(), Constraints.EXPORT_PATH.resolve(fileName)), fileName);
+        runExport(() -> coordinator.exportTranscript(title, headers, List.of(section), "", List.of(), pageLayout, Constraints.EXPORT_PATH.resolve(fileName)), fileName);
 
     }
 
     /**
      * Functional shape for a self-contained export action that may fail with an
      * {@link IOException}, e.g. one of {@link ExportCoordinator}'s {@code exportXxx}
-     * methods already bound to its own arguments via a lambda - {@link #runExport(TranscriptExporter, List, List, Function, String, String)}
+     * methods already bound to its own arguments via a lambda - {@link #runExport(TranscriptExporter, List, List, Function, String, String, PageLayout)}
      * uses this to share result reporting with callers driving an {@link ExportCoordinator}
      * directly, such as {@link UniversityGui#exportDatabase()} ()}'s archive export.
      */
@@ -186,7 +220,7 @@ public final class GuiSupport {
 
     /**
      * Runs {@code action}, reporting success or failure via a blocking alert, the same
-     * way {@link #runExport(TranscriptExporter, List, List, Function, String, String)}
+     * way {@link #runExport(TranscriptExporter, List, List, Function, String, String, PageLayout)}
      * does for the table exporters - exposed publicly so any export action, not just a
      * {@link TranscriptExporter} wired up through this class, can share the same result
      * reporting.
