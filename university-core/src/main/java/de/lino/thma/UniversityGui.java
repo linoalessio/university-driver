@@ -1,7 +1,7 @@
 package de.lino.thma;
 
 import de.lino.thma.domain.EntityFactory;
-import de.lino.thma.persistence.export.DatabaseZipExporter;
+import de.lino.thma.persistence.export.ExportCoordinator;
 import de.lino.thma.ui.helper.GuiSupport;
 import de.lino.thma.ui.helper.Theme;
 import de.lino.thma.ui.tab.ModulesTab;
@@ -119,14 +119,18 @@ public final class UniversityGui extends Application {
 
     /**
      * Exports the entire local database to a timestamped zip archive in the user's
-     * Downloads folder (see {@link DatabaseZipExporter}), reporting success or failure
-     * via the same blocking alert every other export in the app uses.
+     * Downloads folder, reporting success or failure via the same blocking alert every
+     * other export in the app uses. {@link ExportCoordinator.DatabaseZipExporter} is
+     * injected into a fresh {@link ExportCoordinator} rather than called directly.
      */
     private static void exportDatabase() {
 
         final String fileName = "University Driver Backup " + LocalDateTime.now().format(BACKUP_TIMESTAMP) + ".zip";
 
-        GuiSupport.runExport(() -> DatabaseZipExporter.export(Path.of(fileName)), fileName);
+        final ExportCoordinator coordinator = new ExportCoordinator();
+        coordinator.injectArchiveExporter(new ExportCoordinator.DatabaseZipExporter());
+
+        GuiSupport.runExport(() -> coordinator.exportArchive(Path.of(fileName)), fileName);
 
     }
 

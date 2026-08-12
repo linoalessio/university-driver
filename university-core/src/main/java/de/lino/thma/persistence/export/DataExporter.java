@@ -1,17 +1,18 @@
 package de.lino.thma.persistence.export;
 
-import de.lino.thma.persistence.export.excel.ExcelExporter;
-import de.lino.thma.persistence.export.pdf.PdfExporter;
-
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.function.Function;
 
 /**
- * The shared API every format-specific exporter implements, e.g. {@link PdfExporter}
- * or {@link ExcelExporter}: writing an arbitrary data set to a file as a table, with
- * one column per header and one table row per element of the data set.
+ * The shared API every format-specific, flat-table exporter implements: writing an
+ * arbitrary data set to a file as a table, with one column per header and one table
+ * row per element of the data set. No default implementation ships with this
+ * application - its own exports all go through {@link ExportCoordinator.TranscriptPDFExporter}
+ * and {@link ExportCoordinator.TranscriptExcelExporter} instead - but a caller
+ * that needs a plain, ungrouped table export can supply its own {@link DataExporter}
+ * and inject it into an {@link ExportCoordinator} the same way.
  *
  * <p>Callers can program against this interface rather than a concrete exporter,
  * e.g. to export the same data set to several formats without branching on which one.

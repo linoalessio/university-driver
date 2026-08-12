@@ -1,27 +1,20 @@
 package de.lino.thma.ui.helper;
 
+import de.lino.thma.UniversityGui;
 import de.lino.thma.domain.EntityFactory;
-import de.lino.thma.persistence.EntityType;
-import de.lino.thma.persistence.export.DataExporter;
-import de.lino.thma.persistence.export.excel.ExcelExporter;
-import de.lino.thma.persistence.export.pdf.ExamTranscriptExporter;
-import de.lino.thma.persistence.export.pdf.PdfExporter;
-import de.lino.thma.utility.Constraints;
-import de.lino.thma.utility.Serialized;
 import de.lino.thma.domain.entity.module.Exam;
 import de.lino.thma.domain.entity.profile.Profile;
+import de.lino.thma.persistence.EntityType;
+import de.lino.thma.persistence.export.ExportCoordinator;
+import de.lino.thma.persistence.export.transcript.TranscriptExporter;
+import de.lino.thma.persistence.export.transcript.TranscriptSection;
+import de.lino.thma.utility.Constraints;
+import de.lino.thma.utility.Serialized;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.event.ActionEvent;
 import javafx.geometry.Insets;
 import javafx.scene.Node;
-import javafx.scene.control.Alert;
-import javafx.scene.control.ButtonType;
-import javafx.scene.control.Dialog;
-import javafx.scene.control.Label;
-import javafx.scene.control.MenuButton;
-import javafx.scene.control.MenuItem;
-import javafx.scene.control.TableColumn;
-import javafx.scene.control.TableView;
+import javafx.scene.control.*;
 import javafx.scene.control.cell.TextFieldTableCell;
 import javafx.scene.layout.GridPane;
 import javafx.util.StringConverter;
@@ -134,10 +127,10 @@ public final class GuiSupport {
         final Function<T, List<String>> rowMapper = row -> columns.stream().map(spec -> spec.valueOf().apply(row)).toList();
 
         final MenuItem pdfItem = new MenuItem("Export as PDF");
-        pdfItem.setOnAction(event -> runExport(new PdfExporter(), table.getItems(), headers, rowMapper, title, title + ".pdf"));
+        pdfItem.setOnAction(event -> runExport(new ExportCoordinator.TranscriptPDFExporter(), table.getItems(), headers, rowMapper, title, title + ".pdf"));
 
         final MenuItem excelItem = new MenuItem("Export as Excel");
-        excelItem.setOnAction(event -> runExport(new ExcelExporter(), table.getItems(), headers, rowMapper, title, title + ".xlsx"));
+        excelItem.setOnAction(event -> runExport(new ExportCoordinator.TranscriptExcelExporter(), table.getItems(), headers, rowMapper, title, title + ".xlsx"));
 
         return new MenuButton("Export", null, pdfItem, excelItem);
 
@@ -145,7 +138,11 @@ public final class GuiSupport {
 
     /**
      * Runs one export through {@code exporter}, reporting success or failure via a
-     * blocking alert.
+     * blocking alert. {@code rows} are wrapped as a single, untitled {@link TranscriptSection}
+     * (this table has no grouping of its own) with no closing legend, and {@code exporter}
+     * is injected into a fresh {@link ExportCoordinator} rather than called directly, so
+     * this method stays agnostic to which concrete {@link TranscriptExporter} implementation
+     * it was handed.
      *
      * @param exporter the exporter to write the file with
      * @param rows the data set to export, in the order it should appear
@@ -156,17 +153,25 @@ public final class GuiSupport {
      * @param <T> the type of the exported rows
      */
     private static <T> void runExport(
-            final DataExporter exporter, final List<T> rows, final List<String> headers,
+            final TranscriptExporter exporter, final List<T> rows, final List<String> headers,
             final Function<T, List<String>> rowMapper, final String title, final String fileName
     ) {
-        runExport(() -> exporter.export(rows, headers, rowMapper, title, Path.of(fileName)), fileName);
+
+        final TranscriptSection section = new TranscriptSection("", rows.stream().map(rowMapper).toList());
+
+        final ExportCoordinator coordinator = new ExportCoordinator();
+        coordinator.injectTranscriptExporter(exporter);
+
+        runExport(() -> coordinator.exportTranscript(title, headers, List.of(section), "", List.of(), Path.of(fileName)), fileName);
+
     }
 
     /**
      * Functional shape for a self-contained export action that may fail with an
-     * {@link IOException}, e.g. writing a file through {@link DataExporter} or a more
-     * specialized exporter such as {@link ExamTranscriptExporter}
-     * whose shape does not fit {@link DataExporter}'s flat-row contract.
+     * {@link IOException}, e.g. one of {@link ExportCoordinator}'s {@code exportXxx}
+     * methods already bound to its own arguments via a lambda - {@link #runExport(TranscriptExporter, List, List, Function, String, String)}
+     * uses this to share result reporting with callers driving an {@link ExportCoordinator}
+     * directly, such as {@link UniversityGui#exportDatabase()} ()}'s archive export.
      */
     @FunctionalInterface
     public interface ExportAction {
@@ -182,9 +187,10 @@ public final class GuiSupport {
 
     /**
      * Runs {@code action}, reporting success or failure via a blocking alert, the same
-     * way {@link #runExport(DataExporter, List, List, Function, String, String)} does
-     * for the generic table exporters - exposed publicly so any exporter, not just
-     * {@link DataExporter} implementations, can share the same result reporting.
+     * way {@link #runExport(TranscriptExporter, List, List, Function, String, String)}
+     * does for the table exporters - exposed publicly so any export action, not just a
+     * {@link TranscriptExporter} wired up through this class, can share the same result
+     * reporting.
      *
      * @param action the export action to run
      * @param fileName the exported file's name, resolved against {@link Constraints#EXPORT_PATH} for display only

@@ -6,10 +6,10 @@ import de.lino.thma.domain.entity.module.Module;
 import de.lino.thma.domain.entity.semester.Semester;
 import de.lino.thma.domain.entity.semester.SemesterType;
 import de.lino.thma.persistence.EntityType;
-import de.lino.thma.persistence.export.excel.ExamTranscriptExcelExporter;
-import de.lino.thma.persistence.export.pdf.ExamTranscriptExporter;
-import de.lino.thma.persistence.export.TranscriptLegendEntry;
-import de.lino.thma.persistence.export.TranscriptSection;
+import de.lino.thma.persistence.export.ExportCoordinator;
+import de.lino.thma.persistence.export.transcript.TranscriptExporter;
+import de.lino.thma.persistence.export.transcript.TranscriptLegendEntry;
+import de.lino.thma.persistence.export.transcript.TranscriptSection;
 import de.lino.thma.ui.helper.ColumnSpec;
 import de.lino.thma.ui.helper.GuiSupport;
 import javafx.collections.FXCollections;
@@ -27,7 +27,6 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 
-import java.io.IOException;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -37,8 +36,8 @@ import java.util.stream.Collectors;
  * {@link #typePanel(SemesterType, List)}) - undergraduate study on the left, graduate
  * study on the right - each with its own stat cards, its own table of that type's
  * {@link Semester}s, and its own export button, plus a shared "Export All Exams" menu
- * button offering a grouped, transcript-style PDF ({@link ExamTranscriptExporter}) or
- * Excel workbook ({@link ExamTranscriptExcelExporter}) of every registered exam
+ * button offering a grouped, transcript-style PDF ({@link ExportCoordinator.TranscriptPDFExporter}) or
+ * Excel workbook ({@link ExportCoordinator.TranscriptExcelExporter}) of every registered exam
  * regardless of type, independent of the per-semester {@link Exam} export already
  * available from within each {@link de.lino.thma.ui.subtab.SemesterExamsTab}.
  *
@@ -50,7 +49,7 @@ public final class StatisticsTab extends Tab {
 
     /**
      * The German grading-scale key printed as the closing legend page of
-     * {@link #exportAllExams(String, TranscriptFormat)}'s transcript exports.
+     * {@link #exportAllExams(String, TranscriptExporter)}'s transcript exports.
      */
     private static final List<TranscriptLegendEntry> GRADING_SCALE = List.of(
             new TranscriptLegendEntry("1.0 / 1.3 / 1.5", "sehr gut (excellent)"),
@@ -147,9 +146,9 @@ public final class StatisticsTab extends Tab {
 
     /**
      * Builds the "Export All Exams" menu button, offering every registered {@link Exam}
-     * as either a grouped, transcript-style PDF ({@link ExamTranscriptExporter}) or the
-     * same shape as an Excel workbook ({@link ExamTranscriptExcelExporter}): one section
-     * per distinct semester (or set of semesters, joined by name, if a shared
+     * as either a grouped, transcript-style PDF ({@link ExportCoordinator.TranscriptPDFExporter})
+     * or the same shape as an Excel workbook ({@link ExportCoordinator.TranscriptExcelExporter}):
+     * one section per distinct semester (or set of semesters, joined by name, if a shared
      * {@link Module} links to more than one; an exam whose module is not linked to any
      * semester falls into its own "Unassigned" section), each section's exams sorted by
      * {@link Exam#getId()}.
@@ -159,10 +158,10 @@ public final class StatisticsTab extends Tab {
     private static MenuButton exportAllExamsButton() {
 
         final MenuItem pdfItem = new MenuItem("Export as PDF");
-        pdfItem.setOnAction(event -> exportAllExams(".pdf", ExamTranscriptExporter::export));
+        pdfItem.setOnAction(event -> exportAllExams(".pdf", new ExportCoordinator.TranscriptPDFExporter()));
 
         final MenuItem excelItem = new MenuItem("Export as Excel");
-        excelItem.setOnAction(event -> exportAllExams(".xlsx", ExamTranscriptExcelExporter::export));
+        excelItem.setOnAction(event -> exportAllExams(".xlsx", new ExportCoordinator.TranscriptExcelExporter()));
 
         final MenuButton button = new MenuButton("Export All Exams", null, pdfItem, excelItem);
         button.getStyleClass().add("button-primary");
@@ -172,40 +171,17 @@ public final class StatisticsTab extends Tab {
     }
 
     /**
-     * Functional shape both {@link ExamTranscriptExporter#export(String, List, List, String, List, Path)}
-     * and {@link ExamTranscriptExcelExporter#export(String, List, List, String, List, Path)} already
-     * match, letting {@link #exportAllExams(String, TranscriptFormat)} write either format
-     * through the same call site.
-     */
-    @FunctionalInterface
-    private interface TranscriptFormat {
-
-        /**
-         * Writes a grouped transcript to a file; see
-         * {@link ExamTranscriptExporter#export(String, List, List, String, List, Path)}.
-         *
-         * @param documentTitle the document title shown on every page or sheet
-         * @param columnHeaders the column headers, in display order
-         * @param sections the grouped rows to write, in the order they should appear
-         * @param legendTitle the closing legend's heading; ignored if {@code legendEntries} is empty
-         * @param legendEntries the closing legend's entries, or empty to omit it
-         * @param output the file path the export is written to
-         * @throws IOException if the export cannot be written to {@code output}
-         */
-        void export(
-                String documentTitle, List<String> columnHeaders, List<TranscriptSection> sections,
-                String legendTitle, List<TranscriptLegendEntry> legendEntries, Path output
-        ) throws IOException;
-
-    }
-
-    /**
-     * Groups every registered {@link Exam} by semester and writes them via {@code format}.
+     * Groups every registered {@link Exam} by semester and writes them via {@code format},
+     * injected into a fresh {@link ExportCoordinator} rather than called directly - the
+     * same {@link TranscriptExporter} shape both
+     * {@link ExportCoordinator.TranscriptPDFExporter} and
+     * {@link ExportCoordinator.TranscriptExcelExporter} implement, letting this
+     * method write either format through the same call site.
      *
      * @param fileExtension the exported file's extension, including the leading dot
      * @param format the exporter to write the grouped exams through
      */
-    private static void exportAllExams(final String fileExtension, final TranscriptFormat format) {
+    private static void exportAllExams(final String fileExtension, final TranscriptExporter format) {
 
         final List<Exam> exams = EntityFactory.getInstance().getEntities(EntityType.EXAMS);
         final List<Module> modules = EntityFactory.getInstance().getEntities(EntityType.MODULES);
@@ -238,7 +214,10 @@ public final class StatisticsTab extends Tab {
 
         final String fileName = UUID.randomUUID() + "_exams" + fileExtension;
 
-        GuiSupport.runExport(() -> format.export(
+        final ExportCoordinator coordinator = new ExportCoordinator();
+        coordinator.injectTranscriptExporter(format);
+
+        GuiSupport.runExport(() -> coordinator.exportTranscript(
                 "Technical University of Applied Science Mannheim",
                 List.of("Id", "Module", "Grade", "Status", "Credits", "Examiner", "Attempt"),
                 sections,
@@ -250,7 +229,7 @@ public final class StatisticsTab extends Tab {
     }
 
     /**
-     * Builds one exam's row for {@link #exportAllExams(String, TranscriptFormat)},
+     * Builds one exam's row for {@link #exportAllExams(String, TranscriptExporter)},
      * resolving its linked {@link Module}'s name where one exists, falling back to the
      * exam's own name otherwise.
      *
