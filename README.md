@@ -15,16 +15,19 @@ with PDF, Excel and full-database export built in.
 
 | **Area**       | **What it does**                                                                                                                                                                                             |
 |-----------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| **Modules**     | A global catalogue of course modules (name, tag, credit value), created once and linked to whichever semesters teach them.                                                                                 |
-| **Semesters**   | One tab per semester, each with its own nested view of linked modules, that semester's exams, and semester-scoped statistics — plus a rename action and a retroactive undergraduate/graduate assignment used to group semesters in the Statistics tab. |
+| **Login / Register** | Every session starts at a login screen; "Register" lets anyone without an account create one on the spot. The very first account ever registered becomes an **Admin**; every account after that is a **Student**, and self-registration can never grant Admin to anyone else. |
+| **Profiles**    | Admin-only tab listing every student, with their personal details editable in place. Double-clicking a row reveals that student's login credentials, password included in plaintext; the tab's own export includes a "Password" column too — both admin-only, since the tab itself is. |
+| **Modules**     | A global catalogue of course modules (name, tag, credit value), visible to every account regardless of role, created once and linked to whichever semesters teach them.                                    |
+| **Semesters**   | One tab per semester, each with its own nested view of linked modules, that semester's exams, and semester-scoped statistics — plus a rename action and a retroactive undergraduate/graduate assignment used to group semesters in the Statistics tab. A student only ever sees (and creates) their own semesters; an Admin sees every semester across every student. |
 | **Exams**       | Belong to a semester's modules — name, examiner, date, credits, attempt number and grade, all editable in place.                                                                                            |
-| **Statistics**  | Undergraduate and graduate study shown side by side, each with summary stat cards and a per-semester breakdown table, plus a combined **"Export All Exams"** action producing a single grouped, official-transcript-style document across every semester. |
-| **Exports**     | Available from every table — PDF (Apache PDFBox) and Excel `.xlsx` (Apache POI), styled consistently (shaded header row, bordered cells, banded rows), plus a grouped transcript variant with a closing grading-scale legend and a one-click zipped database backup. Every export lands in the current user's **Downloads** folder. |
-| **Theme**       | Light / dark, toggled from the top bar and applied consistently across the main window and every dialog.                                                                                                    |
+| **Statistics**  | Undergraduate and graduate study shown side by side, each with summary stat cards and a per-semester breakdown table, plus a combined **"Export All Exams"** action producing a single grouped, official-transcript-style document — scoped to the logged-in student's own semesters, or every semester for an Admin. |
+| **Exports**     | Available from every table — PDF (Apache PDFBox) and Excel `.xlsx` (Apache POI), styled consistently (shaded header row, bordered cells, banded rows), plus a grouped transcript variant with a closing grading-scale legend. Every export lands in the current user's **Downloads** folder. |
+| **Top bar**     | A **"Data"** dropdown groups the one-click zipped database export/import; a **"Profile"** dropdown groups the light/dark theme toggle and logout, applied consistently across the main window and every dialog. |
 
-Every tab reads and writes through the same in-memory entity cache, so a change made
-in one tab (e.g. renaming a semester, deleting a module) is immediately reflected
-everywhere else it's referenced, and is persisted to disk on every edit.
+Every tab reads and writes through the same in-memory entity cache, and rebuilds
+itself from scratch whenever it becomes the selected tab, so a change made in one tab
+(e.g. renaming a semester, deleting a module) is immediately reflected everywhere else
+it's referenced without restarting the app, and is persisted to disk on every edit.
 
 ## Requirements
 
@@ -117,7 +120,8 @@ directory — **not** the project directory — so a double-clicked `.app` bundl
 ~/Library/Application Support/University Driver/
 ├── credentials.json      # local JSON database connection settings
 └── database/
-    ├── profile/
+    ├── profiles/
+    ├── logins/
     ├── semesters/
     ├── modules/
     └── exams/
@@ -130,7 +134,7 @@ On a fresh checkout, seed the directory yourself before the first run:
 
 ```bash
 mkdir -p ~/"Library/Application Support/University Driver"
-mkdir -p ~/"Library/Application Support/University Driver"/database/{profile,semesters,modules,exams}
+mkdir -p ~/"Library/Application Support/University Driver"/database/{profiles,logins,semesters,modules,exams}
 ```
 
 and create `~/Library/Application Support/University Driver/credentials.json` with:
@@ -186,12 +190,17 @@ Every export (PDF, Excel, database backup) is written to the current user's
 ```
 de.lino.thma
 ├── Launcher                  non-JavaFX entry point for the packaged jar (see below)
-├── UniversityGui              the JavaFX Application; top bar + tab pane
+├── UniversityGui              the JavaFX Application; login-gated top bar + tab pane
 ├── domain                     EntityFactory (in-memory cache + persistence), EntityType and entities
-│   └── entity                 Profile, Information, LoginCredentials, Role, Semester, SemesterType, Module, Exam
+│   └── entity
+│       ├── profile             Profile, Information
+│       │   └── login            Login (email/password/role, hash + admin-only plaintext), Role
+│       ├── semester             Semester, SemesterType
+│       └── module               Module, Exam
 ├── ui
+│   ├── LoginGui                the login/register screen shown before the main window
 │   ├── helper                  EntityTab, ColumnSpec, GuiSupport, Theme
-│   ├── tab                     top-level tabs: Modules, Semesters, Statistics
+│   ├── tab                     top-level tabs: Profiles (admin-only), Modules, Semesters, Statistics
 │   └── subtab                  nested per-semester tabs: Modules, Exams, Statistics
 └── utility                     Constraints, Serialized, MultiTaskingFactory, Application lifecycle
 ```
