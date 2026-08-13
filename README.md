@@ -90,7 +90,7 @@ native app bundle for your OS.
 
 ```bash
 git clone <this repository's URL>
-cd university-driver/university-core
+cd university-driver
 ```
 
 ### 2. Install the app
@@ -136,7 +136,12 @@ needed once per build.
 
 ## Building & Running
 
-Day-to-day development workflows, distinct from the one-time app install above.
+Day-to-day development workflows, distinct from the one-time app install above. Run
+from the `university-core` Maven module, not the repository root:
+
+```bash
+cd university-core
+```
 
 **Build a self-contained, executable "fat" jar** — all dependencies (JavaFX, PDFBox,
 POI, the database driver) shaded in:

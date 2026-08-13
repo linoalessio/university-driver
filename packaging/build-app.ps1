@@ -10,7 +10,7 @@
 $ErrorActionPreference = "Stop"
 
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
-$ProjectDir = Split-Path -Parent $ScriptDir
+$ProjectDir = Join-Path (Split-Path -Parent $ScriptDir) "university-core"
 $AppName = "University Driver"
 # %LOCALAPPDATA%\Programs, not Program Files: matches how per-user apps (e.g. VS Code)
 # install without needing Administrator rights.

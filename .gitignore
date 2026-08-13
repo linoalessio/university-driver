@@ -6,8 +6,8 @@ hs_err_pid*.log
 replay_pid*.log
 
 # jpackage staging left behind by packaging/build-app.sh if it's interrupted
-university-core/packaging/.jpackage-input/
-university-core/packaging/.jpackage-dist/
+packaging/.jpackage-input/
+packaging/.jpackage-dist/
 
 # --- Python ---
 __pycache__/
