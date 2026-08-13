@@ -11,6 +11,7 @@ import javafx.collections.FXCollections;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.Dialog;
 import javafx.scene.control.Spinner;
+import javafx.scene.control.Tab;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.GridPane;
@@ -25,7 +26,18 @@ import java.util.List;
  * within that semester's own "Modules" sub-tab (see {@link SemesterModulesTab}), so the
  * same module can be taught across several semesters.
  *
+ * <p>Unlike {@link de.lino.thma.ui.tab.SemestersTab}, this tab is never scoped to the
+ * logged-in {@link de.lino.thma.domain.entity.profile.Profile}: a {@link Module} belongs
+ * to no profile, only to whichever semesters link it, so every profile sees and can
+ * manage the same global set of modules.
+ *
  * <p>Name, tag and credits are editable in place; the id is not.
+ *
+ * <p>Rebuilds itself from scratch every time it becomes the selected tab (see
+ * {@link GuiSupport#refreshOnSelect(Tab, Runnable)}), so a module added, edited or
+ * unlinked from elsewhere - e.g. a semester's own "Modules" sub-tab
+ * ({@link de.lino.thma.ui.subtab.SemesterModulesTab}) linking one - is reflected here
+ * without restarting the app.
  */
 public final class ModulesTab extends EntityTab<Module> {
 
@@ -36,6 +48,19 @@ public final class ModulesTab extends EntityTab<Module> {
     public ModulesTab() {
 
         super("Modules");
+
+        this.rebuild();
+        GuiSupport.refreshOnSelect(this, this::rebuild);
+
+    }
+
+    /**
+     * (Re)builds this tab's entire content from the current state of
+     * {@link EntityFactory}'s cache: the table of every registered module, sorted by id,
+     * with add/remove actions. Safe to call more than once - see
+     * {@link GuiSupport#refreshOnSelect(Tab, Runnable)}.
+     */
+    private void rebuild() {
 
         final List<Module> modules = EntityFactory.getInstance().<Module>getEntities(EntityType.MODULES).stream()
                 .sorted(Comparator.comparingInt(Module::getId))
@@ -96,8 +121,7 @@ public final class ModulesTab extends EntityTab<Module> {
                     GuiSupport.nextId(EntityType.MODULES, Module::getId),
                     nameField.getText().trim(),
                     tagField.getText().trim(),
-                    creditsSpinner.getValue(),
-                    0 // no exam linked yet; assign one via a semester's Exams sub-tab
+                    creditsSpinner.getValue()
             );
 
             EntityFactory.getInstance().registerEntitiesInCache(EntityType.MODULES, module);

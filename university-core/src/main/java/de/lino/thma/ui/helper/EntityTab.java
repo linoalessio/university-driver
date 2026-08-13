@@ -64,7 +64,9 @@ public abstract class EntityTab<T> extends Tab {
      * button is disabled whenever {@code table} has no selection, and invokes
      * {@code onRemove} with the selected row when pressed - callers are expected to
      * confirm the removal (see {@link GuiSupport#confirmDeletion(String, String)})
-     * before actually deleting anything from within {@code onRemove}.
+     * before actually deleting anything from within {@code onRemove}. Equivalent to
+     * {@link #buildContent(TableView, List, List, String, String, Runnable, String, Consumer)}
+     * with the same columns shown in the table and exported.
      *
      * @param table the table to display in the tab, already populated with data
      * @param columns the table's columns, built via {@link GuiSupport#toColumns(List, TableView)}, and reused to drive {@code exportTitle}'s export
@@ -83,6 +85,35 @@ public abstract class EntityTab<T> extends Tab {
             final String removeLabel,
             final Consumer<T> onRemove
     ) {
+        this.buildContent(table, columns, columns, exportTitle, addLabel, onAdd, removeLabel, onRemove);
+    }
+
+    /**
+     * Wraps {@code table} into this tab's content, the same way
+     * {@link #buildContent(TableView, List, String, String, Runnable, String, Consumer)}
+     * does, except the exported file's columns ({@code exportColumns}) need not match
+     * the ones actually shown in {@code table} - e.g. {@link de.lino.thma.ui.tab.ProfilesTab}
+     * exports a "Password" column it never renders in the table itself.
+     *
+     * @param table the table to display in the tab, already populated with data
+     * @param columns the table's own visible columns, built via {@link GuiSupport#toColumns(List, TableView)}
+     * @param exportColumns the columns {@code exportTitle}'s export is built from, independent of {@code columns}
+     * @param exportTitle the exported file's document title and base file name
+     * @param addLabel the label of the toolbar's add button
+     * @param onAdd invoked when the add button is pressed, to open the entity-specific creation dialog
+     * @param removeLabel the label of the toolbar's remove button
+     * @param onRemove invoked with the selected row when the remove button is pressed, to remove it after confirmation
+     */
+    protected final void buildContent(
+            final TableView<T> table,
+            final List<ColumnSpec<T>> columns,
+            final List<ColumnSpec<T>> exportColumns,
+            final String exportTitle,
+            final String addLabel,
+            final Runnable onAdd,
+            final String removeLabel,
+            final Consumer<T> onRemove
+    ) {
 
         table.getColumns().addAll(GuiSupport.toColumns(columns, table));
         table.setEditable(true);
@@ -92,7 +123,7 @@ public abstract class EntityTab<T> extends Tab {
         addButton.getStyleClass().add("button-primary");
         addButton.setOnAction(event -> onAdd.run());
 
-        final HBox toolbar = new HBox(8, GuiSupport.exportButton(exportTitle, table, columns), addButton);
+        final HBox toolbar = new HBox(8, GuiSupport.exportButton(exportTitle, table, exportColumns), addButton);
         toolbar.getStyleClass().add("toolbar");
 
         if (onRemove != null) {

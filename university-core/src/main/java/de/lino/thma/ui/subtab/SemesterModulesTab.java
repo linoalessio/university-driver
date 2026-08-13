@@ -28,8 +28,18 @@ import java.util.List;
  *
  * <p>Every column is read-only here; editing a module's own name, tag or credits happens
  * in {@link ModulesTab}.
+ *
+ * <p>Rebuilds itself from scratch every time it becomes the selected tab (see
+ * {@link GuiSupport#refreshOnSelect(javafx.scene.control.Tab, Runnable)}), so a module
+ * edited in {@link ModulesTab}, or linked/unlinked here or via that tab's own removal,
+ * is reflected here without restarting the app.
  */
 public final class SemesterModulesTab extends EntityTab<Module> {
+
+    /**
+     * The semester this tab is scoped to - see {@link #SemesterModulesTab(Semester)}.
+     */
+    private final Semester semester;
 
     /**
      * Builds this semester's "Modules" sub-tab: a read-only table of {@code semester}'s
@@ -41,7 +51,21 @@ public final class SemesterModulesTab extends EntityTab<Module> {
 
         super("Modules");
 
-        final List<Module> modules = semester.getModules().stream()
+        this.semester = semester;
+
+        this.rebuild();
+        GuiSupport.refreshOnSelect(this, this::rebuild);
+
+    }
+
+    /**
+     * (Re)builds this tab's entire content from {@link #semester}'s current linked
+     * modules: a read-only table, sorted by id, with a link action scoped to it. Safe to
+     * call more than once - see {@link GuiSupport#refreshOnSelect(javafx.scene.control.Tab, Runnable)}.
+     */
+    private void rebuild() {
+
+        final List<Module> modules = this.semester.getModules().stream()
                 .sorted(Comparator.comparingInt(Module::getId))
                 .toList();
         final TableView<Module> table = new TableView<>(FXCollections.observableArrayList(modules));
@@ -53,7 +77,7 @@ public final class SemesterModulesTab extends EntityTab<Module> {
                 ColumnSpec.of("Credits", m -> String.valueOf(m.getCredits()))
         );
 
-        this.buildContent(table, columns, semester.getName() + " Modules", "+ Link Module", () -> linkModuleDialog(semester, table));
+        this.buildContent(table, columns, this.semester.getName() + " Modules", "+ Link Module", () -> linkModuleDialog(this.semester, table));
 
     }
 

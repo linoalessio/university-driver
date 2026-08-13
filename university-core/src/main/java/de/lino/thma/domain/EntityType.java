@@ -1,6 +1,7 @@
 package de.lino.thma.domain;
 
-import de.lino.thma.domain.entity.Student;
+import de.lino.thma.domain.entity.profile.Profile;
+import de.lino.thma.domain.entity.profile.login.Login;
 import de.lino.thma.domain.entity.module.Exam;
 import de.lino.thma.domain.entity.module.Module;
 import de.lino.thma.domain.entity.semester.Semester;
@@ -21,9 +22,16 @@ import java.io.Serializable;
 public enum EntityType {
 
     /**
-     * {@link Student} entities, stored under the {@code "students"} database section.
+     * {@link Profile} entities, stored under the {@code "profiles"} database section.
      */
-    STUDENTS("students", Student.class),
+    PROFILE("profiles", Profile.class),
+
+    /**
+     * {@link Login} entities, stored under the {@code "logins"} database
+     * section - looked up by email rather than embedded in {@link Profile} itself, so a
+     * {@link Profile#getLoginCredentials()} lookup always reflects the current record.
+     */
+    LOGIN("logins", Login.class),
 
     /**
      * {@link Semester} entities, stored under the {@code "semesters"} database section.

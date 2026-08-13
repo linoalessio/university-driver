@@ -6,7 +6,7 @@ import de.lino.database.export.transcript.format.PageOrientation;
 import de.lino.thma.UniversityGui;
 import de.lino.thma.domain.EntityFactory;
 import de.lino.thma.domain.entity.module.Exam;
-import de.lino.thma.domain.entity.profile.Profile;
+import de.lino.thma.domain.entity.profile.Information;
 import de.lino.database.export.ExportCoordinator;
 import de.lino.database.export.transcript.TranscriptSection;
 import de.lino.thma.domain.EntityType;
@@ -44,6 +44,30 @@ public final class GuiSupport {
      * Not instantiable; all functionality is exposed through static methods.
      */
     private GuiSupport() {
+    }
+
+    /**
+     * Makes {@code tab} rebuild its own content via {@code rebuild} every time it
+     * becomes the selected tab, not just once at construction - none of this app's tabs
+     * bind to {@link EntityFactory}'s cache reactively, so a tab left sitting on screen
+     * (or simply not the one you happen to switch back to) would otherwise keep showing
+     * whatever was true when it was last built, however many changes another tab has
+     * made since. {@code rebuild} is expected to tear down and reassemble this tab's own
+     * content from scratch, e.g. by calling {@link #toColumns(List, TableView)} and
+     * {@code setContent(...)} again exactly as the constructor already did once.
+     *
+     * <p>Only fires on becoming selected, not on becoming deselected, and never for the
+     * very first time a tab is shown - callers still call {@code rebuild} (or run its
+     * own constructor logic directly) once up front themselves, the same as before this
+     * existed.
+     *
+     * @param tab the tab to rebuild on every future selection
+     * @param rebuild rebuilds {@code tab}'s own content from the current state of {@link EntityFactory}'s cache
+     */
+    public static void refreshOnSelect(final Tab tab, final Runnable rebuild) {
+        tab.setOnSelectionChanged(event -> {
+            if (tab.isSelected()) rebuild.run();
+        });
     }
 
     /**
@@ -229,28 +253,58 @@ public final class GuiSupport {
      * transcript export wired up through this class, can share the same result
      * reporting.
      *
+     * <p>Catches {@link Exception}, not just the {@link IOException} {@code action}
+     * itself declares: a JavaFX button handler that lets an unchecked exception escape
+     * fails silently (JavaFX logs it to stderr and drops it, with no dialog and no other
+     * visible effect) - e.g. {@link EntityFactory#syncToDatabase()} wraps a failure on
+     * one of its background virtual threads as an unchecked {@link java.util.concurrent.CompletionException},
+     * which would otherwise vanish this way instead of ever reaching this method's own
+     * {@code catch}.
+     *
      * @param action the export action to run
      * @param fileName the exported file's name, resolved against {@link Constraints#EXPORT_PATH} for display only
      */
     public static void runExport(final ExportAction action, final String fileName) {
 
         try {
-
             action.run();
-
-            final Alert success = new Alert(
-                    Alert.AlertType.INFORMATION,
-                    "Exported to " + Constraints.EXPORT_PATH.resolve(fileName).toAbsolutePath(),
-                    ButtonType.OK
-            );
-            success.setHeaderText(null);
-            Theme.style(success.getDialogPane());
-            success.showAndWait();
-
-        } catch (final IOException exception) {
+            showSuccess("Exported to " + Constraints.EXPORT_PATH.resolve(fileName).toAbsolutePath());
+        } catch (final Exception exception) {
             showValidationError("Export failed: " + exception.getMessage());
         }
 
+    }
+
+    /**
+     * Shows a blocking success alert with the given message, styled the same way
+     * {@link #showValidationError(String)} styles its own - shared by
+     * {@link #runExport(ExportAction, String)} and any other self-reporting action
+     * that is not itself an export, such as {@link UniversityGui}'s own database import.
+     *
+     * @param message the message to display
+     */
+    public static void showSuccess(final String message) {
+        final Alert alert = new Alert(Alert.AlertType.INFORMATION, message, ButtonType.OK);
+        alert.setHeaderText(null);
+        Theme.style(alert.getDialogPane());
+        alert.showAndWait();
+    }
+
+    /**
+     * Shows a blocking informational alert with an explicit title, styled the same way
+     * {@link #showSuccess(String)} styles its own untitled one - for a message that
+     * needs a title of its own rather than none, e.g.
+     * {@link de.lino.thma.ui.tab.ProfilesTab}'s admin-only credentials reveal.
+     *
+     * @param title the dialog's title
+     * @param message the message to display
+     */
+    public static void showInfo(final String title, final String message) {
+        final Alert alert = new Alert(Alert.AlertType.INFORMATION, message, ButtonType.OK);
+        alert.setTitle(title);
+        alert.setHeaderText(null);
+        Theme.style(alert.getDialogPane());
+        alert.showAndWait();
     }
 
     /**
@@ -473,7 +527,7 @@ public final class GuiSupport {
 
     /**
      * Converts a date to epoch milliseconds at midnight UTC, for constructing
-     * {@link Profile#getBirthdate()} and
+     * {@link Information#getBirthdate()} and
      * {@link Exam#getDate()} values from a
      * {@link javafx.scene.control.DatePicker}'s selected value.
      *

@@ -1,11 +1,11 @@
 package de.lino.thma.domain.entity.semester;
 
 import de.lino.thma.domain.EntityFactory;
-import de.lino.thma.domain.entity.Student;
-import de.lino.thma.domain.entity.module.Exam;
 import de.lino.thma.domain.EntityType;
-import de.lino.thma.utility.Serialized;
+import de.lino.thma.domain.entity.module.Exam;
 import de.lino.thma.domain.entity.module.Module;
+import de.lino.thma.domain.entity.profile.Profile;
+import de.lino.thma.utility.Serialized;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
@@ -15,7 +15,6 @@ import java.io.Serial;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
@@ -40,38 +39,43 @@ public class Semester extends Serialized {
      * keys in this app, which are immutable ids assigned once at creation.
      */
     @Setter
-    private String name;
+    private String id;
 
     /**
      * The ids of the modules taught during this semester. Backed by a
-     * {@link CopyOnWriteArrayList} for the same reason
-     * {@link Student#getSemesters()} is: reads via
-     * {@link #hasModule(int)} far outnumber writes via {@link #addModule(int)}.
+     * {@link CopyOnWriteArrayList}, since reads via {@link #hasModule(int)} far
+     * outnumber writes via {@link #addModule(int)}.
      */
     private final List<Integer> modules;
 
+    private final List<Integer> exams;
+
     /**
      * The kind of study this semester itself is classified under, for statistics
-     * grouped by {@link SemesterType} (see {@link de.lino.thma.ui.tab.StatisticsTab})
-     * - distinct from {@link Student#getSemesters()}, which tracks each student's own
-     * enrollment type instead. {@code null} until assigned, e.g. for a semester
-     * registered before this field existed, or one nobody has classified yet; assigned
-     * after the fact via {@link de.lino.thma.ui.subtab.SemesterDetailTab}.
+     * grouped by {@link SemesterType} (see {@link de.lino.thma.ui.tab.StatisticsTab}).
+     * {@code null} until assigned, e.g. for a semester registered before this field
+     * existed, or one nobody has classified yet; assigned after the fact via
+     * {@link de.lino.thma.ui.subtab.SemesterDetailTab}.
      */
     @Setter
     private SemesterType type;
 
     /**
-     * Constructs a semester.
+     * Constructs a semester, owned by {@code profile}: its primary key becomes
+     * {@code "<profile's email>;<name>"} (see {@link #getOwnerEmail()}), the same key
+     * recorded in the owning {@link Profile#getSemesters()}.
      *
+     * @param profile the profile this semester is owned by
      * @param name the semester's name
      * @param modules the ids of the modules taught during this semester
-     * @throws NullPointerException if {@code name} or {@code modules} is {@code null}
+     * @throws NullPointerException if {@code profile}, {@code name} or {@code modules} is {@code null}
      */
-    public Semester(final String name, final Integer... modules) {
+    public Semester(final Profile profile, final String name, final Integer... modules) {
 
-        this.name = Objects.requireNonNull(name, "@Semester.init: name must not be null");
+        this.id = profile.getInformation().getEmailAddress() + ";" + name;
+
         this.modules = new CopyOnWriteArrayList<>(Arrays.asList(Objects.requireNonNull(modules, "@Semester.init: modules must not be null")));
+        this.exams = new CopyOnWriteArrayList<>();
 
     }
 
@@ -84,6 +88,11 @@ public class Semester extends Serialized {
      */
     public Semester addModule(final int moduleId) {
         this.modules.add(moduleId);
+        return this;
+    }
+
+    public Semester addExam(final int examId) {
+        this.exams.add(examId);
         return this;
     }
 
@@ -100,6 +109,11 @@ public class Semester extends Serialized {
         return this;
     }
 
+    public Semester removeExam(final int examId) {
+        this.exams.remove(Integer.valueOf(examId));
+        return this;
+    }
+
     /**
      * Resolves every {@link Module} taught during this semester, filtering the
      * globally registered modules down to those whose id is one of {@link #modules}.
@@ -113,16 +127,14 @@ public class Semester extends Serialized {
     }
 
     /**
-     * Resolves every {@link Exam} belonging to this semester's {@link #getModules()},
-     * skipping any module that has none.
+     * Resolves every {@link Exam} belonging to this semester's {@link #getModules()}
+     * (see {@link Module#getExams()}), flattened across every module.
      *
-     * @return the resolved exams, or an empty list if none of this semester's modules has one yet
+     * @return the resolved exams, or an empty list if none of this semester's modules has any yet
      */
     public List<Exam> getExams() {
-        return this.getModules().stream()
-                .map(Module::getExam)
-                .filter(Optional::isPresent)
-                .map(Optional::get)
+        return EntityFactory.getInstance().<Exam>getEntities(EntityType.EXAMS).stream()
+                .filter(exams -> this.hasExam(exams.getId()))
                 .toList();
     }
 
@@ -146,6 +158,25 @@ public class Semester extends Serialized {
         return this.modules.contains(moduleId);
     }
 
+    public boolean hasExam(final int examId) {
+        return this.exams.contains(examId);
+    }
+
+    public String getName() {
+        return this.id.split(";")[1];
+    }
+
+    /**
+     * The email address of the {@link Profile} that owns this semester, derived from
+     * this semester's own {@link #id} rather than tracked as a separate field - see
+     * {@link #Semester(Profile, String, Integer...)}.
+     *
+     * @return the owning profile's email address
+     */
+    public String getOwnerEmail() {
+        return this.id.split(";", 2)[0];
+    }
+
     /**
      * {@inheritDoc}
      *
@@ -153,7 +184,7 @@ public class Semester extends Serialized {
      */
     @Override
     public List<String> keysOf() {
-        return List.of(this.name);
+        return List.of(this.id);
     }
 
 }

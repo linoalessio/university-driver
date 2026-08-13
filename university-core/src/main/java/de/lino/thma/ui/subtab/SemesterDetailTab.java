@@ -1,7 +1,7 @@
 package de.lino.thma.ui.subtab;
 
 import de.lino.thma.domain.EntityFactory;
-import de.lino.thma.domain.entity.Student;
+import de.lino.thma.domain.entity.profile.Profile;
 import de.lino.thma.domain.entity.semester.Semester;
 import de.lino.thma.domain.entity.semester.SemesterType;
 import de.lino.thma.domain.EntityType;
@@ -138,14 +138,14 @@ public final class SemesterDetailTab extends Tab {
 
     /**
      * Opens a modal dialog for renaming {@code semester}, pre-filled with its current
-     * name. On confirmation with an actually-changed, unique name: every {@link Student}
-     * enrolled in it has their own reference renamed too (see
-     * {@link Student#renameSemester(String, String)}, since a student's enrollment
-     * references the semester by name rather than holding a live reference to it), the
-     * semester's stale database row under its old name is deleted (its primary key is
-     * this name, so once renamed in memory it would otherwise be left behind as an
-     * orphaned duplicate rather than updated), the semester itself is renamed,
-     * {@code detailTab}'s own title is updated to match, and {@code semesterTabs} is
+     * name. On confirmation with an actually-changed, unique name: the semester's stale
+     * database row under its old composite key ({@code "<owner email>;<old name>"}) is
+     * deleted, so once renamed in memory it is not left behind as an orphaned duplicate
+     * rather than updated; the owning {@link Profile} (looked up by
+     * {@link Semester#getOwnerEmail()}, if still registered) has its own
+     * {@link Profile#getSemesters()} updated to the new key in place of the old one;
+     * the semester itself is renamed via {@link Semester#setId(String)}; and
+     * {@code detailTab}'s own title is updated to match, with {@code semesterTabs}
      * re-sorted alphabetically to reflect the semester's possibly-changed position.
      *
      * @param semester the semester to rename
@@ -168,7 +168,7 @@ public final class SemesterDetailTab extends Tab {
             }
 
             if (!newName.equalsIgnoreCase(semester.getName())
-                    && EntityFactory.getInstance().findEntity(EntityType.SEMESTERS, newName).isPresent()) {
+                    && EntityFactory.getInstance().findEntity(EntityType.SEMESTERS, semester.getOwnerEmail() + ";" + newName).isPresent()) {
                 GuiSupport.showValidationError("A semester named \"" + newName + "\" already exists.");
                 return false;
             }
@@ -184,11 +184,17 @@ public final class SemesterDetailTab extends Tab {
 
             if (newName.equals(oldName)) return;
 
-            EntityFactory.getInstance().<Student>getEntities(EntityType.STUDENTS)
-                    .forEach(student -> student.renameSemester(oldName, newName));
+            final String oldId = semester.getId();
+            final String newId = semester.getOwnerEmail() + ";" + newName;
 
-            EntityFactory.getInstance().deleteFromDatabase(EntityType.SEMESTERS, oldName);
-            semester.setName(newName);
+            EntityFactory.getInstance().deleteFromDatabase(EntityType.SEMESTERS, oldId);
+
+            EntityFactory.getInstance().<Profile>findEntity(EntityType.PROFILE, semester.getOwnerEmail()).ifPresent(owner -> {
+                owner.removeSemester(oldId);
+                owner.addSemester(newId);
+            });
+
+            semester.setId(newId);
             EntityFactory.getInstance().syncToDatabase();
 
             detailTab.setText(newName);

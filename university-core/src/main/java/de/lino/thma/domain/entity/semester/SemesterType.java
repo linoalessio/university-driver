@@ -1,10 +1,10 @@
 package de.lino.thma.domain.entity.semester;
 
-import de.lino.thma.domain.entity.Student;
+import de.lino.thma.domain.entity.profile.Profile;
 import lombok.Getter;
 
 /**
- * The kind of study a {@link Student} is enrolled in for a
+ * The kind of study a {@link Profile} is enrolled in for a
  * given {@link Semester}. A student may be enrolled under both types at once, e.g.
  * while starting a graduate program before finishing an undergraduate one.
  */

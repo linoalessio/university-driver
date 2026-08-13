@@ -1,10 +1,13 @@
 package de.lino.thma.domain.entity.module;
 
+import de.lino.thma.domain.EntityFactory;
+import de.lino.thma.domain.EntityType;
 import de.lino.thma.utility.Serialized;
 import lombok.*;
 
 import java.io.Serial;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * An exam belonging to a {@link Module}, sat by a student on a given date, with a
@@ -26,6 +29,11 @@ public class Exam extends Serialized {
      * This exam's id, and primary key; see {@link #keysOf()}.
      */
     private final int id;
+
+    /**
+     * The id of the {@link Module} this exam belongs to; see {@link #getModule()}.
+     */
+    private final int moduleId;
 
     /**
      * The date this exam takes place, as epoch milliseconds.
@@ -58,6 +66,15 @@ public class Exam extends Serialized {
      * The grade achieved on this attempt.
      */
     private double grade;
+
+    /**
+     * Resolves the {@link Module} this exam belongs to, by {@link #moduleId}.
+     *
+     * @return the resolved module, or an empty {@link Optional} if {@link #moduleId} no longer resolves to one
+     */
+    public Optional<Module> getModule() {
+        return EntityFactory.getInstance().findEntity(EntityType.MODULES, this.moduleId);
+    }
 
     /**
      * {@inheritDoc}

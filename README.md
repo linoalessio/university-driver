@@ -117,7 +117,7 @@ directory — **not** the project directory — so a double-clicked `.app` bundl
 ~/Library/Application Support/University Driver/
 ├── credentials.json      # local JSON database connection settings
 └── database/
-    ├── students/
+    ├── profile/
     ├── semesters/
     ├── modules/
     └── exams/
@@ -130,7 +130,7 @@ On a fresh checkout, seed the directory yourself before the first run:
 
 ```bash
 mkdir -p ~/"Library/Application Support/University Driver"
-mkdir -p ~/"Library/Application Support/University Driver"/database/{students,semesters,modules,exams}
+mkdir -p ~/"Library/Application Support/University Driver"/database/{profile,semesters,modules,exams}
 ```
 
 and create `~/Library/Application Support/University Driver/credentials.json` with:
@@ -166,7 +166,7 @@ Every export (PDF, Excel, database backup) is written to the current user's
   while blocked on I/O, so writing or reloading many entities at once (e.g. "Export
   Database", or reloading every entity type on startup) dispatches them all
   concurrently instead of one after another.
-- **Copy-on-write caching** — every entity type's in-memory list, and each student's
+- **Copy-on-write caching** — every entity type's in-memory list, and each profile's
   per-semester-type enrollment list, is a `CopyOnWriteArrayList`. Reads (populating a
   table, looking up an entity by key) vastly outnumber writes (adding, removing,
   renaming), so lookups proceed without any locking or contention, at the cost of
@@ -188,7 +188,7 @@ de.lino.thma
 ├── Launcher                  non-JavaFX entry point for the packaged jar (see below)
 ├── UniversityGui              the JavaFX Application; top bar + tab pane
 ├── domain                     EntityFactory (in-memory cache + persistence), EntityType and entities
-│   └── entity                 Student, Profile, Semester, SemesterType, Module, Exam
+│   └── entity                 Profile, Information, LoginCredentials, Role, Semester, SemesterType, Module, Exam
 ├── ui
 │   ├── helper                  EntityTab, ColumnSpec, GuiSupport, Theme
 │   ├── tab                     top-level tabs: Modules, Semesters, Statistics

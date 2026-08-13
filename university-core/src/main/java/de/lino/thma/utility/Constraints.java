@@ -1,22 +1,11 @@
 package de.lino.thma.utility;
 
-import de.lino.thma.domain.entity.profile.Profile;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.nio.file.Path;
-import java.time.LocalDate;
-import java.time.ZoneOffset;
 
 /**
  * Shared, process-wide constants used across the application.
  */
 public final class Constraints {
-
-    /**
-     * The application's shared {@link Logger}.
-     */
-    public static final Logger LOGGER = LoggerFactory.getLogger("[University]");
 
     /**
      * Home path of the application's configuration and local database.
@@ -39,19 +28,6 @@ public final class Constraints {
      * Not instantiable; all functionality is exposed through static members.
      */
     private Constraints() {
-    }
-
-    /**
-     * Converts a calendar date to epoch milliseconds at midnight UTC, for constructing
-     * {@link Profile#getBirthdate()} values from readable year/month/day literals.
-     *
-     * @param year the year
-     * @param month the month, 1-12
-     * @param day the day of month
-     * @return {@code year-month-day} at midnight UTC, as epoch milliseconds
-     */
-    public static long birthdateOf(final int year, final int month, final int day) {
-        return LocalDate.of(year, month, day).atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli();
     }
 
 }

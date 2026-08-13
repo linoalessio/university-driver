@@ -7,11 +7,11 @@ import lombok.*;
 
 import java.io.Serial;
 import java.util.List;
-import java.util.Optional;
 
 /**
- * A course module, made up of one or more {@link Exam}s (see {@link Exam#getId()} ()}),
- * with a name, a short tag and a credit value.
+ * A course module, made up of one or more {@link Exam}s (see {@link Exam#getModuleId()},
+ * each exam's own link back to the module it belongs to), with a name, a short tag and
+ * a credit value.
  */
 @AllArgsConstructor
 @Getter @Setter
@@ -48,18 +48,15 @@ public class Module extends Serialized {
     private int credits;
 
     /**
-     * The id of this module's {@link Exam}, resolved on demand via {@link #getExam()}.
-     */
-    private int examId;
-
-    /**
-     * Resolves this module's {@link Exam}, looked up in
-     * {@link EntityFactory#findEntity(EntityType, Object)} by {@link #getExamId()}.
+     * Resolves every {@link Exam} belonging to this module, i.e. every registered exam
+     * whose own {@link Exam#getModuleId()} equals this module's id.
      *
-     * @return the resolved exam, or an empty {@link Optional} if {@link #getExamId()} no longer matches a registered exam
+     * @return the resolved exams, or an empty list if this module has none registered yet
      */
-    public Optional<Exam> getExam() {
-        return EntityFactory.getInstance().findEntity(EntityType.EXAMS, this.examId);
+    public List<Exam> getExams() {
+        return EntityFactory.getInstance().<Exam>getEntities(EntityType.EXAMS).stream()
+                .filter(exam -> exam.getModuleId() == this.id)
+                .toList();
     }
 
     /**

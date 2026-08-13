@@ -24,17 +24,21 @@ import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Optional;
 
 /**
  * The "Exams" sub-tab of one {@link SemesterDetailTab}: lists only the {@link Exam}s
  * belonging to that one {@link Semester} (see {@link Semester#getExams()}), sorted by
  * id, with an "Add Exam" dialog whose "Assign To Module" choices are restricted to
  * {@link Semester#getModules()} - an exam created here can never be linked to a module
- * outside this semester.
+ * outside this semester. Every exam belongs to exactly one module (see
+ * {@link Exam#getModuleId()}), so the dialog requires one to be picked.
  *
  * <p>Name, examiner, date, credits, attempt and grade are editable in place; the id and
  * the derived module column are not.
+ *
+ * <p>Rebuilds itself from scratch every time it becomes the selected tab (see
+ * {@link GuiSupport#refreshOnSelect(javafx.scene.control.Tab, Runnable)}), so an exam
+ * added or removed elsewhere is reflected here without restarting the app.
  */
 public final class SemesterExamsTab extends EntityTab<Exam> {
 
@@ -42,6 +46,11 @@ public final class SemesterExamsTab extends EntityTab<Exam> {
      * Display and parse format used for the editable "Date" column and the "Add Exam" dialog's date picker.
      */
     private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("dd.MM.yyyy");
+
+    /**
+     * The semester this tab is scoped to - see {@link #SemesterExamsTab(Semester)}.
+     */
+    private final Semester semester;
 
     /**
      * Builds this semester's "Exams" sub-tab: a table of {@code semester}'s own exams,
@@ -53,14 +62,28 @@ public final class SemesterExamsTab extends EntityTab<Exam> {
 
         super("Exams");
 
-        final List<Exam> exams = semester.getExams().stream()
+        this.semester = semester;
+
+        this.rebuild();
+        GuiSupport.refreshOnSelect(this, this::rebuild);
+
+    }
+
+    /**
+     * (Re)builds this tab's entire content from {@link #semester}'s current own exams:
+     * a table, sorted by id, with add/remove actions scoped to it. Safe to call more
+     * than once - see {@link GuiSupport#refreshOnSelect(javafx.scene.control.Tab, Runnable)}.
+     */
+    private void rebuild() {
+
+        final List<Exam> exams = this.semester.getExams().stream()
                 .sorted(Comparator.comparingInt(Exam::getId))
                 .toList();
         final TableView<Exam> table = new TableView<>(FXCollections.observableArrayList(exams));
 
         final List<ColumnSpec<Exam>> columns = List.of(
                 ColumnSpec.of("Id", e -> GuiSupport.idLabel(e.getId())),
-                ColumnSpec.of("Module", e -> moduleOf(semester, e).map(Module::getName).orElse("-")),
+                ColumnSpec.of("Module", e -> e.getModule().map(Module::getName).orElse("-")),
                 ColumnSpec.editable("Name", Exam::getName, (e, v) -> e.setName(GuiSupport.requireText(v, "Name"))),
                 ColumnSpec.editable("Examiner", Exam::getExaminer, (e, v) -> e.setExaminer(GuiSupport.requireText(v, "Examiner"))),
                 ColumnSpec.editable("Date", e -> Instant.ofEpochMilli(e.getDate()).atZone(ZoneOffset.UTC).format(DATE_FORMAT),
@@ -70,31 +93,16 @@ public final class SemesterExamsTab extends EntityTab<Exam> {
                 ColumnSpec.editable("Grade", e -> String.valueOf(e.getGrade()), (e, v) -> e.setGrade(GuiSupport.parseDouble(v, "Grade")))
         );
 
-        this.buildContent(table, columns, semester.getName() + " Exams", "+ Add Exam", () -> addExamDialog(semester, table),
-                "− Remove Exam", exam -> removeExam(exam, table));
+        this.buildContent(table, columns, this.semester.getName() + " Exams", "+ Add Exam", () -> addExamDialog(this.semester, table),
+                "− Remove Exam", exam -> removeExam(semester, exam, table));
 
     }
 
     /**
-     * Looks up the {@link Module}, if any, currently linked to the given exam via
-     * {@link Module#getExamId()}, among {@code semester}'s own modules.
-     *
-     * @param semester the semester to search the modules of
-     * @param exam the exam to find the linked module of
-     * @return the linked module, or an empty {@link Optional} if none links to it
-     */
-    private static Optional<Module> moduleOf(final Semester semester, final Exam exam) {
-        return semester.getModules().stream()
-                .filter(module -> module.getExamId() == exam.getId())
-                .findFirst();
-    }
-
-    /**
-     * Opens a modal dialog for manually creating a new {@link Exam}, optionally
-     * assigning it to one of {@code semester}'s own {@link Module}s (a module links to
-     * at most one exam via {@link Module#getExamId()}; picking a module that already
-     * has one reassigns it to the new exam). On confirmation the exam is registered in
-     * {@link EntityFactory}'s cache and appended to {@code table}.
+     * Opens a modal dialog for manually creating a new {@link Exam}, assigned to one of
+     * {@code semester}'s own {@link Module}s - required, since every exam belongs to
+     * exactly one module (see {@link Exam#getModuleId()}). On confirmation the exam is
+     * registered in {@link EntityFactory}'s cache and appended to {@code table}.
      *
      * @param semester the semester whose modules the exam may be assigned to
      * @param table the exams table to append the newly created exam to
@@ -105,7 +113,6 @@ public final class SemesterExamsTab extends EntityTab<Exam> {
 
         final ComboBox<Module> moduleBox = new ComboBox<>(FXCollections.observableArrayList(modules));
         moduleBox.setConverter(GuiSupport.nameConverter(Module::getName));
-        moduleBox.setPromptText("None");
 
         final TextField nameField = new TextField();
         final TextField examinerField = new TextField();
@@ -128,6 +135,11 @@ public final class SemesterExamsTab extends EntityTab<Exam> {
 
         final Dialog<ButtonType> dialog = GuiSupport.confirmationDialog("Add Exam", grid, event -> {
 
+            if (moduleBox.getValue() == null) {
+                GuiSupport.showValidationError("A module must be selected.");
+                return false;
+            }
+
             if (nameField.getText().isBlank() || examinerField.getText().isBlank() || datePicker.getValue() == null) {
                 GuiSupport.showValidationError("Name, examiner and date are required.");
                 return false;
@@ -141,6 +153,7 @@ public final class SemesterExamsTab extends EntityTab<Exam> {
 
             final Exam exam = new Exam(
                     GuiSupport.nextId(EntityType.EXAMS, Exam::getId),
+                    moduleBox.getValue().getId(),
                     GuiSupport.epochMillisOf(datePicker.getValue()),
                     nameField.getText().trim(),
                     examinerField.getText().trim(),
@@ -149,10 +162,8 @@ public final class SemesterExamsTab extends EntityTab<Exam> {
                     gradeSpinner.getValue()
             );
 
+            semester.addExam(exam.getId());
             EntityFactory.getInstance().registerEntitiesInCache(EntityType.EXAMS, exam);
-
-            if (moduleBox.getValue() != null) moduleBox.getValue().setExamId(exam.getId());
-
             EntityFactory.getInstance().syncToDatabase();
             table.getItems().add(exam);
 
@@ -161,21 +172,16 @@ public final class SemesterExamsTab extends EntityTab<Exam> {
     }
 
     /**
-     * Removes {@code exam} after confirmation, first clearing {@link Module#getExamId()}
-     * on every {@link Module} that links to it, since that link lives in the module,
-     * not the exam.
+     * Removes {@code exam} after confirmation.
      *
      * @param exam the exam to remove
      * @param table the exams table to remove {@code exam} from
      */
-    private static void removeExam(final Exam exam, final TableView<Exam> table) {
+    private static void removeExam(final Semester semester, final Exam exam, final TableView<Exam> table) {
 
         if (!GuiSupport.confirmDeletion("Remove Exam", "Remove \"" + exam.getName() + "\"?")) return;
 
-        EntityFactory.getInstance().<Module>getEntities(EntityType.MODULES).stream()
-                .filter(module -> module.getExamId() == exam.getId())
-                .forEach(module -> module.setExamId(0));
-
+        semester.removeExam(exam.getId());
         EntityFactory.getInstance().removeEntitiesFromCache(EntityType.EXAMS, exam);
         EntityFactory.getInstance().deleteFromDatabase(EntityType.EXAMS, exam);
         EntityFactory.getInstance().syncToDatabase();
