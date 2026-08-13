@@ -167,7 +167,15 @@ public final class StatisticsTab extends Tab {
         excelItem.setOnAction(event -> GuiSupport.promptPageLayout().ifPresent(layout ->
                 exportAllExams(".xlsx", layout)));
 
-        final MenuButton button = new MenuButton("Export All Exams", null, pdfItem, excelItem);
+        final MenuItem csvItem = new MenuItem("Export as CSV");
+        csvItem.setOnAction(event -> GuiSupport.promptPageLayout().ifPresent(layout ->
+                exportAllExams(".csv", layout)));
+
+        final MenuItem jsonItem = new MenuItem("Export as Json");
+        jsonItem.setOnAction(event -> GuiSupport.promptPageLayout().ifPresent(layout ->
+                exportAllExams(".json", layout)));
+
+        final MenuButton button = new MenuButton("Export All Exams", null, pdfItem, excelItem, csvItem, jsonItem);
         button.getStyleClass().add("button-primary");
 
         return button;

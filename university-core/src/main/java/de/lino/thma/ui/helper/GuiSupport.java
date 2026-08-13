@@ -138,7 +138,15 @@ public final class GuiSupport {
         excelItem.setOnAction(event -> promptPageLayout().ifPresent(layout ->
                 runExport(table.getItems(), headers, rowMapper, title, title + ".xlsx", layout)));
 
-        return new MenuButton("Export", null, pdfItem, excelItem);
+        final MenuItem csvItem = new MenuItem("Export as CSV");
+        csvItem.setOnAction(event -> promptPageLayout().ifPresent(layout ->
+                runExport(table.getItems(), headers, rowMapper, title, title + ".csv", layout)));
+
+        final MenuItem jsonItem = new MenuItem("Export as Json");
+        jsonItem.setOnAction(event -> promptPageLayout().ifPresent(layout ->
+                runExport(table.getItems(), headers, rowMapper, title, title + ".json", layout)));
+
+        return new MenuButton("Export", null, pdfItem, excelItem, csvItem, jsonItem);
 
     }
 
