@@ -30,6 +30,7 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
 import java.io.IOException;
@@ -180,17 +181,7 @@ public final class UniversityGui extends Application {
 
         final MenuButton dataMenu = new MenuButton("Data", null, exportDatabaseItem, importDatabaseItem);
 
-        final MenuItem themeToggleItem = new MenuItem(Theme.current() == Theme.DARK ? "☀ Light Mode" : "🌙 Dark Mode");
-
-        themeToggleItem.setOnAction(event -> {
-            Theme.toggle(scene);
-            themeToggleItem.setText(Theme.current() == Theme.DARK ? "☀ Light Mode" : "🌙 Dark Mode");
-        });
-
-        final MenuItem logoutItem = new MenuItem("↩ Logout");
-        logoutItem.setOnAction(event -> showLoginScreen(stage));
-
-        final MenuButton profileMenu = new MenuButton("Profile", null, themeToggleItem, logoutItem);
+        final MenuButton profileMenu = getProfileMenu(scene, stage);
 
         final Button quitButton = new Button("⏻ Quit");
         quitButton.getStyleClass().add("button-danger");
@@ -203,6 +194,21 @@ public final class UniversityGui extends Application {
 
         return bar;
 
+    }
+
+    private static @NotNull MenuButton getProfileMenu(Scene scene, Stage stage) {
+        final MenuItem themeToggleItem = new MenuItem(Theme.current() == Theme.DARK ? "☀ Light Mode" : "🌙 Dark Mode");
+
+        themeToggleItem.setOnAction(event -> {
+            Theme.toggle(scene);
+            themeToggleItem.setText(Theme.current() == Theme.DARK ? "☀ Light Mode" : "🌙 Dark Mode");
+        });
+
+        final MenuItem logoutItem = new MenuItem("↩ Logout");
+        logoutItem.setOnAction(event -> showLoginScreen(stage));
+
+        final MenuButton profileMenu = new MenuButton("Profile", null, themeToggleItem, logoutItem);
+        return profileMenu;
     }
 
     /**
