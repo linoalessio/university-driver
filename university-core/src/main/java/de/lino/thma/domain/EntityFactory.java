@@ -54,6 +54,15 @@ public class EntityFactory {
      * Constructs the entity registry and registers the local SQLite
      * {@link DatabaseProvider} that backs it. Reserved for {@link #getInstance()},
      * since registering the same provider more than once is not a supported use case.
+     *
+     * <p>{@link Credentials}'s own constructor already creates
+     * {@link Constraints#CONFIGURATION_PATH} and writes a default {@code credentials.json}
+     * the first time it doesn't exist, and registering the {@link DatabaseProvider} below
+     * already creates its {@code database} directory the same way - so on a completely
+     * fresh install, the only thing missing afterward is each {@link EntityType}'s own
+     * database section directory, which is otherwise only created lazily on that type's
+     * first {@link #syncToDatabase(EntityType, Serialized...)}. Creating every section up
+     * front here means a fresh checkout never needs any manual directory setup at all.
      */
     private EntityFactory() {
 
@@ -66,6 +75,8 @@ public class EntityFactory {
         );
 
         this.databaseProvider = DatabaseRepository.getInstance().registerDatabaseProvider(0, DatabaseType.JSON, this.credentials);
+
+        for (final EntityType type : EntityType.values()) this.databaseProvider.createSection(type.getDatabaseSectionTag());
 
     }
 

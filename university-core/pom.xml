@@ -74,12 +74,13 @@
             <version>5.5.1</version>
         </dependency>
 
-        <!-- JavaFX GUI, see ui.StudentGui; classifier is pinned to this machine's platform (Apple Silicon macOS) -->
+        <!-- JavaFX GUI, see ui.StudentGui; classifier picks the right native binaries for
+             the building machine's platform, see the "windows"/"mac-aarch64" profiles below -->
         <dependency>
             <groupId>org.openjfx</groupId>
             <artifactId>javafx-controls</artifactId>
             <version>21.0.12</version>
-            <classifier>mac-aarch64</classifier>
+            <classifier>${javafx.platform}</classifier>
         </dependency>
 
     </dependencies>
@@ -191,5 +192,33 @@
         </plugins>
 
     </build>
+
+    <!-- Selects the JavaFX native classifier (${javafx.platform}) for the building
+         machine's OS. "mac-aarch64" is active by default so plain `mvn ...` keeps
+         working unchanged on this (Apple Silicon) machine; it only steps aside once
+         the "windows" profile activates on an actual Windows build machine. -->
+    <profiles>
+
+        <profile>
+            <id>mac-aarch64</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+            <properties>
+                <javafx.platform>mac-aarch64</javafx.platform>
+            </properties>
+        </profile>
+
+        <profile>
+            <id>windows</id>
+            <activation>
+                <os><family>windows</family></os>
+            </activation>
+            <properties>
+                <javafx.platform>win</javafx.platform>
+            </properties>
+        </profile>
+
+    </profiles>
 
 </project>

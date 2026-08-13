@@ -3,7 +3,7 @@
 ![Java](https://img.shields.io/badge/Java-21-orange)
 ![JavaFX](https://img.shields.io/badge/JavaFX-21.0.12-blue)
 ![Build](https://img.shields.io/badge/Build-Maven-C71A36)
-![Platform](https://img.shields.io/badge/Platform-macOS%20(Apple%20Silicon)-lightgrey)
+![Platform](https://img.shields.io/badge/Platform-macOS%20(Apple%20Silicon)%20%7C%20Windows-lightgrey)
 
 University Driver is a desktop app for tracking a university career: semesters, the
 modules taught in each, their exams and grades, and the statistics that fall out of
@@ -72,26 +72,71 @@ it's referenced without restarting the app, and is persisted to disk on every ed
   ```
 
 - **Maven 3.6+**.
-- **macOS on Apple Silicon** — the JavaFX dependency is pinned to the `mac-aarch64`
-  classifier in `pom.xml`. To run on another platform (Intel Mac, Linux, Windows),
-  change the `<classifier>` of the `javafx-controls` dependency to match (e.g. `mac`,
-  `linux`, `win`), or remove it and let Maven's OS/architecture detection pick
-  automatically.
+- **macOS (Apple Silicon) or Windows.** The JavaFX dependency's native classifier is
+  picked automatically by a Maven profile in `pom.xml` based on the building machine's
+  OS — `mac-aarch64` by default, `win` on Windows (see the `<profiles>` section). To
+  build on another platform (Intel Mac, Linux), add a matching profile or override
+  `-Djavafx.platform=<classifier>` on the command line (e.g. `mac`, `linux`).
 - Network access to Maven Central and the project's GitHub Packages repository (for
   the `database-driver-plugin` dependency this app is built on).
 
 ## Installation
 
-Get the source via git:
+There's no pre-built release to download — the app is packaged locally, from source,
+on the machine that's going to run it. Two steps: get the source, then build+install a
+native app bundle for your OS.
+
+### 1. Get the source
 
 ```bash
 git clone <this repository's URL>
 cd university-driver/university-core
 ```
 
+### 2. Install the app
+
+This runs a full `mvn clean package`, then uses `jpackage` (bundled with JDK 21 — see
+[Requirements](#requirements)) to produce a native app bundle and place it where your
+OS expects installed apps to live, plus a double-clickable shortcut on the Desktop.
+Re-run the same script after pulling changes or editing code to reinstall the updated
+build — it always overwrites the previous one in place.
+
+**macOS:**
+
+```bash
+./packaging/build-app.sh
+```
+
+Produces **"University Driver.app"**, installs it to `/Applications`, and refreshes a
+symlink to it on the Desktop (a plain copy there would break under iCloud Desktop
+sync — see the script's comments).
+
+Because the app is only ad-hoc signed (no Apple Developer ID), the very first launch
+triggers Gatekeeper's "cannot verify developer" warning even though the app is fine —
+right-click (or Control-click) it in `/Applications` and choose **Open**, then confirm
+in the dialog. This one-time step isn't needed again for that build.
+
+**Windows (PowerShell):**
+
+```powershell
+.\packaging\build-app.ps1
+```
+
+Produces **"University Driver.exe"** under
+`%LOCALAPPDATA%\Programs\University Driver` (no Administrator rights needed), plus a
+`.lnk` shortcut on the Desktop. The script auto-detects a JDK 21 install via
+`JAVA_HOME` or common per-vendor locations (Temurin, Corretto, Microsoft Build of
+OpenJDK); if none is found it stops with instructions to set `JAVA_HOME` yourself.
+
+The build is unsigned, so the first launch shows Windows SmartScreen's "Windows
+protected your PC" prompt — click **More info**, then **Run anyway**. Again, only
+needed once per build.
+
 --- ---
 
 ## Building & Running
+
+Day-to-day development workflows, distinct from the one-time app install above.
 
 **Build a self-contained, executable "fat" jar** — all dependencies (JavaFX, PDFBox,
 POI, the database driver) shaded in:
@@ -118,29 +163,22 @@ needed.
 java -jar target/university-core-1.0-SNAPSHOT.jar
 ```
 
-**Build a native macOS app bundle:**
-
-```bash
-./packaging/build-app.sh
-```
-
-Builds the jar, then uses `jpackage` (bundled with JDK 21) to produce
-**"University Driver.app"**, installs it to `/Applications`, and refreshes a
-double-clickable symlink to it on the Desktop. Re-run this script after any code
-change to rebuild the app bundle. Requires the same JDK 21 install as the Maven
-toolchain (`jpackage` ships with the JDK itself).
-
 --- ---
 
 ## Configuration & Data
 
 The app stores its configuration and local database under the current user's
-[Application Support](https://developer.apple.com/library/archive/documentation/FileManagement/Conceptual/FileSystemProgrammingGuide/FileSystemOverview/FileSystemOverview.html)
-directory — **not** the project directory — so a double-clicked `.app` bundle and
-`mvn javafx:run` always see the same data:
+per-user application data directory — **not** the project directory — so a
+double-clicked packaged app and `mvn javafx:run` always see the same data. The exact
+location follows each OS's own convention (see `Constraints.CONFIGURATION_PATH`):
+
+- macOS: `~/Library/Application Support/University Driver/`
+  ([Application Support](https://developer.apple.com/library/archive/documentation/FileManagement/Conceptual/FileSystemProgrammingGuide/FileSystemOverview/FileSystemOverview.html))
+- Windows: `%APPDATA%\University Driver\` (typically
+  `C:\Users\<you>\AppData\Roaming\University Driver\`)
 
 ```
-~/Library/Application Support/University Driver/
+University Driver/
 ├── credentials.json      # local JSON database connection settings
 └── database/
     ├── profiles/
@@ -150,17 +188,13 @@ directory — **not** the project directory — so a double-clicked `.app` bundl
     └── exams/
 ```
 
-This directory is not created automatically, and `university-core/config/` (holding
-real personal grade data on the original development machine) is deliberately
-excluded from version control (see `.gitignore`) — it is not shipped with the repo.
-On a fresh checkout, seed the directory yourself before the first run:
-
-```bash
-mkdir -p ~/"Library/Application Support/University Driver"
-mkdir -p ~/"Library/Application Support/University Driver"/database/{profiles,logins,semesters,modules,exams}
-```
-
-and create `~/Library/Application Support/University Driver/credentials.json` with:
+**Nothing here needs to be created by hand.** The very first time the app starts
+(`mvn javafx:run`, `java -jar`, or the packaged app), `EntityFactory`'s constructor
+creates the whole tree above on demand if it's missing — the `University Driver`
+directory itself, a default `credentials.json`, the `database` directory, and every
+entity type's own subdirectory (`profiles`, `logins`, `semesters`, `modules`,
+`exams`), all up front rather than one at a time as each type is first used. The
+generated `credentials.json` looks like this:
 
 ```json
 {
@@ -175,9 +209,14 @@ and create `~/Library/Application Support/University Driver/credentials.json` wi
 
 The app talks to a local JSON file store, not a networked SQL database, so every
 field above except `fileRepository` is an unused placeholder — there are no real
-credentials to configure. If you already have an existing `config/` folder from a
-previous run of this project, `cp -R` it into place instead of creating these files
-by hand.
+credentials to configure, and this file only needs to exist, not be edited.
+
+`university-core/config/` (holding real personal grade data on the original
+development machine) is deliberately excluded from version control (see
+`.gitignore`) — it is not shipped with the repo. If you already have an existing
+per-user data directory from a previous run of this project (on the same OS), copy it
+into place instead of letting a fresh one be generated — `cp -R` on macOS,
+`Copy-Item -Recurse` on Windows.
 
 Every export (PDF, Excel, CSV, JSON, database backup) is written to the current
 user's **Downloads** folder.

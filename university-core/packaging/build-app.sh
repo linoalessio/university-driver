@@ -1,4 +1,6 @@
 #!/bin/bash
+# macOS build script. For Windows, use build-app.ps1 instead.
+#
 # Builds "University Driver.app" into /Applications, and refreshes a Desktop shortcut
 # to it so it can still be launched with a double-click from there.
 #
