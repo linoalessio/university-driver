@@ -5,8 +5,7 @@ import de.lino.thma.domain.entity.module.Exam;
 import de.lino.thma.domain.entity.module.Module;
 import de.lino.thma.domain.entity.semester.Semester;
 import de.lino.database.export.ExportCoordinator;
-import de.lino.database.export.transcript.PageLayout;
-import de.lino.database.export.transcript.TranscriptExporter;
+import de.lino.database.export.transcript.format.PageLayout;
 import de.lino.database.export.transcript.TranscriptLegendEntry;
 import de.lino.database.export.transcript.TranscriptSection;
 import de.lino.thma.domain.entity.semester.SemesterType;
@@ -37,8 +36,8 @@ import java.util.stream.Collectors;
  * {@link #typePanel(SemesterType, List)}) - undergraduate study on the left, graduate
  * study on the right - each with its own stat cards, its own table of that type's
  * {@link Semester}s, and its own export button, plus a shared "Export All Exams" menu
- * button offering a grouped, transcript-style PDF ({@link ExportCoordinator.TranscriptPDFExporter}) or
- * Excel workbook ({@link ExportCoordinator.TranscriptExcelExporter}) of every registered exam
+ * button offering a grouped, transcript-style PDF or Excel workbook (auto-resolved by
+ * {@link ExportCoordinator#exportTranscript}) of every registered exam
  * regardless of type, independent of the per-semester {@link Exam} export already
  * available from within each {@link de.lino.thma.ui.subtab.SemesterExamsTab}. Both
  * offer a page format and orientation prompt via {@link GuiSupport#promptPageLayout()}
@@ -52,7 +51,7 @@ public final class StatisticsTab extends Tab {
 
     /**
      * The German grading-scale key printed as the closing legend page of
-     * {@link #exportAllExams(String, TranscriptExporter, PageLayout)}'s transcript exports.
+     * {@link #exportAllExams(String, PageLayout)}'s transcript exports.
      */
     private static final List<TranscriptLegendEntry> GRADING_SCALE = List.of(
             new TranscriptLegendEntry("1.0 / 1.3 / 1.5", "sehr gut (excellent)"),
@@ -149,12 +148,12 @@ public final class StatisticsTab extends Tab {
 
     /**
      * Builds the "Export All Exams" menu button, offering every registered {@link Exam}
-     * as either a grouped, transcript-style PDF ({@link ExportCoordinator.TranscriptPDFExporter})
-     * or the same shape as an Excel workbook ({@link ExportCoordinator.TranscriptExcelExporter}):
-     * one section per distinct semester (or set of semesters, joined by name, if a shared
-     * {@link Module} links to more than one; an exam whose module is not linked to any
-     * semester falls into its own "Unassigned" section), each section's exams sorted by
-     * {@link Exam#getId()}.
+     * as either a grouped, transcript-style PDF or the same shape as an Excel workbook
+     * (auto-resolved by {@link ExportCoordinator#exportTranscript} from the exported
+     * file's extension): one section per distinct semester (or set of semesters, joined
+     * by name, if a shared {@link Module} links to more than one; an exam whose module
+     * is not linked to any semester falls into its own "Unassigned" section), each
+     * section's exams sorted by {@link Exam#getId()}.
      *
      * @return the built menu button
      */
@@ -162,11 +161,11 @@ public final class StatisticsTab extends Tab {
 
         final MenuItem pdfItem = new MenuItem("Export as PDF");
         pdfItem.setOnAction(event -> GuiSupport.promptPageLayout().ifPresent(layout ->
-                exportAllExams(".pdf", new ExportCoordinator.TranscriptPDFExporter(), layout)));
+                exportAllExams(".pdf", layout)));
 
         final MenuItem excelItem = new MenuItem("Export as Excel");
         excelItem.setOnAction(event -> GuiSupport.promptPageLayout().ifPresent(layout ->
-                exportAllExams(".xlsx", new ExportCoordinator.TranscriptExcelExporter(), layout)));
+                exportAllExams(".xlsx", layout)));
 
         final MenuButton button = new MenuButton("Export All Exams", null, pdfItem, excelItem);
         button.getStyleClass().add("button-primary");
@@ -176,18 +175,14 @@ public final class StatisticsTab extends Tab {
     }
 
     /**
-     * Groups every registered {@link Exam} by semester and writes them via {@code format},
-     * injected into a fresh {@link ExportCoordinator} rather than called directly - the
-     * same {@link TranscriptExporter} shape both
-     * {@link ExportCoordinator.TranscriptPDFExporter} and
-     * {@link ExportCoordinator.TranscriptExcelExporter} implement, letting this
-     * method write either format through the same call site.
+     * Groups every registered {@link Exam} by semester and writes them through a fresh
+     * {@link ExportCoordinator}, whose {@link ExportCoordinator#exportTranscript} resolves
+     * the PDF or Excel implementation to write with purely from {@code fileExtension}.
      *
      * @param fileExtension the exported file's extension, including the leading dot
-     * @param format the exporter to write the grouped exams through
      * @param pageLayout the page format and orientation to render the export at
      */
-    private static void exportAllExams(final String fileExtension, final TranscriptExporter format, final PageLayout pageLayout) {
+    private static void exportAllExams(final String fileExtension, final PageLayout pageLayout) {
 
         final List<Exam> exams = EntityFactory.getInstance().getEntities(EntityType.EXAMS);
         final List<Module> modules = EntityFactory.getInstance().getEntities(EntityType.MODULES);
@@ -221,7 +216,6 @@ public final class StatisticsTab extends Tab {
         final String fileName = UUID.randomUUID() + "_exams" + fileExtension;
 
         final ExportCoordinator coordinator = new ExportCoordinator();
-        coordinator.injectTranscriptExporter(format);
 
         GuiSupport.runExport(() -> coordinator.exportTranscript(
                 "Technical University of Applied Science Mannheim",
@@ -236,7 +230,7 @@ public final class StatisticsTab extends Tab {
     }
 
     /**
-     * Builds one exam's row for {@link #exportAllExams(String, TranscriptExporter, PageLayout)},
+     * Builds one exam's row for {@link #exportAllExams(String, PageLayout)},
      * resolving its linked {@link Module}'s name where one exists, falling back to the
      * exam's own name otherwise.
      *
