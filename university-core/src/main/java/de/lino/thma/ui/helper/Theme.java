@@ -1,9 +1,12 @@
 package de.lino.thma.ui.helper;
 
+import de.lino.database.json.JsonDocument;
+import de.lino.thma.utility.Constraints;
 import javafx.scene.Scene;
 import javafx.scene.control.Dialog;
 import javafx.scene.control.DialogPane;
 
+import java.nio.file.Path;
 import java.util.Objects;
 
 /**
@@ -15,6 +18,10 @@ import java.util.Objects;
  * lets any {@link Dialog} or {@link javafx.scene.control.Alert} built anywhere in the
  * {@code ui} package pick up the current theme via {@link #style(DialogPane)}, since
  * those render in their own {@link Scene} and would otherwise stay unstyled.
+ *
+ * <p>The current selection is persisted to {@code configuration.json} under
+ * {@link Constraints#CONFIGURATION_PATH}, so it survives across app restarts; see
+ * {@link #load()} and {@link #save()}.
  */
 public enum Theme {
 
@@ -43,9 +50,22 @@ public enum Theme {
     }
 
     /**
-     * The theme currently active across the whole application.
+     * The file the current theme selection is persisted to and loaded from, alongside
+     * the app's other per-user state.
      */
-    private static Theme current = DARK;
+    private static final Path CONFIGURATION_FILE = Constraints.CONFIGURATION_PATH.resolve("configuration.json");
+
+    /**
+     * The key {@link #CONFIGURATION_FILE} stores the selected theme's {@link #name()} under.
+     */
+    private static final String THEME_KEY = "theme";
+
+    /**
+     * The theme currently active across the whole application, loaded from
+     * {@link #CONFIGURATION_FILE} at startup (see {@link #load()}), defaulting to
+     * {@link #DARK} if it is missing, unreadable, or holds an unrecognized value.
+     */
+    private static Theme current = load();
 
     /**
      * The currently active theme.
@@ -66,13 +86,15 @@ public enum Theme {
     }
 
     /**
-     * Switches the current theme to the other one and re-applies it to {@code scene}.
+     * Switches the current theme to the other one, re-applies it to {@code scene}, and
+     * persists the new selection to {@link #CONFIGURATION_FILE}.
      *
      * @param scene the main window's scene, restyled with the new theme
      */
     public static void toggle(final Scene scene) {
         current = current == LIGHT ? DARK : LIGHT;
         applyTo(scene);
+        save();
     }
 
     /**
@@ -98,6 +120,37 @@ public enum Theme {
                 Theme.class.getResource(this.resourcePath),
                 "Missing stylesheet resource: " + this.resourcePath
         ).toExternalForm();
+    }
+
+    /**
+     * Reads the persisted theme selection from {@link #CONFIGURATION_FILE}.
+     *
+     * <p>Falls back to {@link #DARK} if the file does not exist yet (e.g. first
+     * launch), has no {@link #THEME_KEY} entry, or holds a value that is no longer a
+     * recognized {@link Theme} constant - a missing or corrupt configuration file
+     * should never prevent the app from starting.
+     *
+     * @return the persisted theme, or {@link #DARK} if none is available
+     */
+    private static Theme load() {
+
+        final JsonDocument document = JsonDocument.load(CONFIGURATION_FILE);
+        if (!document.contains(THEME_KEY)) return DARK;
+
+        try {
+            return Theme.valueOf(document.getString(THEME_KEY));
+        } catch (final IllegalArgumentException exception) {
+            return DARK;
+        }
+
+    }
+
+    /**
+     * Persists the currently active theme to {@link #CONFIGURATION_FILE}, creating its
+     * parent directory if this is the first time any per-user state has been written.
+     */
+    private static void save() {
+        new JsonDocument().append(THEME_KEY, current.name()).write(CONFIGURATION_FILE);
     }
 
 }

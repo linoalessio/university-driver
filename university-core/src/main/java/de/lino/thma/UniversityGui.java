@@ -8,6 +8,7 @@ import de.lino.thma.domain.entity.profile.login.Login;
 import de.lino.thma.ui.LoginGui;
 import de.lino.thma.ui.helper.GuiSupport;
 import de.lino.thma.ui.helper.Theme;
+import de.lino.thma.ui.tab.ExamsTab;
 import de.lino.thma.ui.tab.ModulesTab;
 import de.lino.thma.ui.tab.ProfilesTab;
 import de.lino.thma.ui.tab.SemestersTab;
@@ -44,8 +45,9 @@ import java.util.zip.ZipInputStream;
 
 /**
  * A simple JavaFX window switching between the entity tabs in {@code java.thma.ui}
- * ({@link ProfilesTab}, {@link ModulesTab}, {@link SemestersTab}, {@link StatisticsTab})
- * via the {@link TabPane} filling the window, below a top bar carrying a "Data" dropdown
+ * ({@link ProfilesTab}, {@link ExamsTab}, {@link ModulesTab}, {@link SemestersTab},
+ * {@link StatisticsTab}) via the {@link TabPane} filling the window, below a top bar
+ * carrying a "Data" dropdown
  * (export - see {@link #exportDatabase()} - and import - see
  * {@link #importDatabase(Stage, TabPane, Profile, boolean)} - of the local database) and
  * a "Profile" dropdown (the light/dark {@link Theme} toggle and logout). Each entity tab
@@ -59,8 +61,9 @@ import java.util.zip.ZipInputStream;
  * once that login succeeds.
  *
  * <p>Modules are registered independently in {@link ModulesTab} and only linked to the
- * semesters that teach them; exams are not listed in their own top-level tab, and only
- * ever appear nested inside the {@link SemestersTab} tab of the semester they belong to.
+ * semesters that teach them; a student sees exams only nested inside the
+ * {@link SemestersTab} tab of the semester they belong to - an admin additionally sees
+ * every registered exam, system-wide, in the admin-only {@link ExamsTab}.
  *
  * <p>Standalone entry point, run via {@link #main(String[])} independently of the
  * CLI-driven {@code Main}/{@code UniversityDriverApplication} lifecycle.
@@ -111,11 +114,13 @@ public final class UniversityGui extends Application {
      *
      * <p>The {@link Profile} matching {@code credentials}' own email (see
      * {@link Login#getCurrentProfile()}) is resolved once here and passed, alongside
-     * {@link Login#isAdmin()}, to {@link SemestersTab} and {@link StatisticsTab}, which
-     * scope what they show down to that one profile's own unless the account is an
-     * admin. The {@link ProfilesTab} - listing every student, and (double-click, or
-     * exported) their login credentials in plaintext - is admin-only, and left out of
-     * {@code tabs} entirely otherwise.
+     * {@link Login#isAdmin()}, to {@link ModulesTab} and {@link StatisticsTab} (which
+     * scope what they show, or let be managed, down to that one profile's own unless the
+     * account is an admin). {@link SemestersTab} is left out of {@code tabs} entirely for
+     * an admin account - the same way the {@link ProfilesTab} - listing every student,
+     * and (double-click, or exported) their login credentials in plaintext - and the
+     * {@link ExamsTab} - listing, and letting be removed, every registered exam
+     * system-wide - are both admin-only, and left out of {@code tabs} entirely otherwise.
      *
      * @param stage the primary stage provided by the JavaFX runtime
      * @param credentials the account that just logged in successfully
@@ -126,8 +131,9 @@ public final class UniversityGui extends Application {
         final Profile currentProfile = credentials.getCurrentProfile().orElse(null);
         final boolean isAdmin = credentials.isAdmin();
 
-        final TabPane tabs = new TabPane(new ModulesTab(), new SemestersTab(currentProfile, isAdmin), new StatisticsTab(currentProfile, isAdmin));
-        if (isAdmin) tabs.getTabs().add(0, new ProfilesTab());
+        final TabPane tabs = new TabPane(new ModulesTab(isAdmin), new StatisticsTab(currentProfile, isAdmin));
+        if (!isAdmin) tabs.getTabs().add(1, new SemestersTab(currentProfile));
+        if (isAdmin) tabs.getTabs().addAll(0, List.of(new ProfilesTab(), new ExamsTab()));
         tabs.setTabClosingPolicy(TabPane.TabClosingPolicy.UNAVAILABLE);
 
         final BorderPane root = new BorderPane();
@@ -175,6 +181,7 @@ public final class UniversityGui extends Application {
         final MenuButton dataMenu = new MenuButton("Data", null, exportDatabaseItem, importDatabaseItem);
 
         final MenuItem themeToggleItem = new MenuItem(Theme.current() == Theme.DARK ? "☀ Light Mode" : "🌙 Dark Mode");
+
         themeToggleItem.setOnAction(event -> {
             Theme.toggle(scene);
             themeToggleItem.setText(Theme.current() == Theme.DARK ? "☀ Light Mode" : "🌙 Dark Mode");
@@ -240,7 +247,7 @@ public final class UniversityGui extends Application {
      * @param stage the main window, used as the file chooser's owner
      * @param tabs the tab pane rebuilt from scratch once the import succeeds
      * @param currentProfile the logged-in account's own profile, or {@code null} if it has none; re-passed to the rebuilt {@link SemestersTab} and {@link StatisticsTab}
-     * @param isAdmin whether the logged-in account is an admin; re-passed to the rebuilt {@link SemestersTab} and {@link StatisticsTab}
+     * @param isAdmin whether the logged-in account is an admin; re-passed to the rebuilt {@link ModulesTab} and {@link StatisticsTab}
      */
     private static void importDatabase(final Stage stage, final TabPane tabs, final Profile currentProfile, final boolean isAdmin) {
 
@@ -262,8 +269,9 @@ public final class UniversityGui extends Application {
             EntityFactory.getInstance().getDatabaseProvider().reload();
             EntityFactory.getInstance().syncFromDatabase();
 
-            final List<Tab> rebuiltTabs = new ArrayList<>(List.of(new ModulesTab(), new SemestersTab(currentProfile, isAdmin), new StatisticsTab(currentProfile, isAdmin)));
-            if (isAdmin) rebuiltTabs.add(0, new ProfilesTab());
+            final List<Tab> rebuiltTabs = new ArrayList<>(List.of(new ModulesTab(isAdmin), new StatisticsTab(currentProfile, isAdmin)));
+            if (!isAdmin) rebuiltTabs.add(1, new SemestersTab(currentProfile));
+            if (isAdmin) rebuiltTabs.addAll(0, List.of(new ProfilesTab(), new ExamsTab()));
             tabs.getTabs().setAll(rebuiltTabs);
 
             GuiSupport.showSuccess("Imported from " + archive.getAbsolutePath());

@@ -2,24 +2,34 @@ package de.lino.thma.ui.tab;
 
 import de.lino.thma.domain.EntityFactory;
 import de.lino.thma.domain.EntityType;
+import de.lino.thma.domain.entity.module.Exam;
+import de.lino.thma.domain.entity.module.Module;
 import de.lino.thma.domain.entity.profile.Profile;
 import de.lino.thma.domain.entity.profile.login.Login;
 import de.lino.thma.domain.entity.profile.login.Role;
 import de.lino.thma.domain.entity.profile.Information;
+import de.lino.thma.domain.entity.semester.Semester;
+import de.lino.thma.domain.entity.semester.SemesterType;
 import de.lino.thma.ui.helper.ColumnSpec;
 import de.lino.thma.ui.helper.EntityTab;
 import de.lino.thma.ui.helper.GuiSupport;
+import de.lino.thma.ui.helper.Theme;
 import javafx.collections.FXCollections;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.DatePicker;
 import javafx.scene.control.Dialog;
+import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.Tab;
 import javafx.scene.control.TableRow;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.GridPane;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -46,10 +56,20 @@ import java.util.Optional;
  * and email/role live on the separately-registered {@link Login} rather than
  * {@link Information} itself, so editing them here would silently desynchronize a
  * student's displayed profile from the email/role their account actually logs in with.
- * A student's password is never shown as a plain table column, but double-clicking a
- * row reveals it (see {@link #showCredentialsDialog(Profile)}), and it is always
+ * A student's password is never shown as a plain table column, and it is always
  * included, in plaintext, in this tab's own export (see {@link Login#getPassword()}) -
- * both admin-only, since only an admin ever reaches this tab in the first place.
+ * admin-only, since only an admin ever reaches this tab in the first place.
+ *
+ * <p>Double-clicking a row reveals different information depending on that row's own
+ * {@link Role}: for a {@link Role#STUDENT}, a statistics dialog (see
+ * {@link #showStatisticsDialog(Profile)}) - that student's total semesters, exams and
+ * modules, their average grade in {@link SemesterType#UNDER_GRADUATE_STUDY} and
+ * {@link SemesterType#GRADUATE_STUDY} separately, the same "Export All Exams" menu
+ * button {@link StatisticsTab} itself offers (scoped down to just that one student's own
+ * exams), and their own login credentials in plaintext; for any other role (i.e. another
+ * {@link Role#ADMIN}), just that account's own login credentials (see
+ * {@link #showCredentialsDialog(Profile)}), the same as every row revealed before this
+ * distinction existed.
  *
  * <p>Rebuilds itself from scratch every time it becomes the selected tab (see
  * {@link GuiSupport#refreshOnSelect(Tab, Runnable)}), so a student added or removed
@@ -116,9 +136,12 @@ public final class ProfilesTab extends EntityTab<Profile> {
     }
 
     /**
-     * Builds a {@link TableRow} that, on a double-click, reveals the row's own
-     * {@link Profile}'s login credentials via {@link #showCredentialsDialog(Profile)} -
-     * skipped for a double-click landing on an empty row (past the last actual entry).
+     * Builds a {@link TableRow} that, on a double-click, reveals different information
+     * about the row's own {@link Profile} depending on its {@link Role}: a
+     * {@link Role#STUDENT}'s statistics (see {@link #showStatisticsDialog(Profile)}), or
+     * any other role's own login credentials (see {@link #showCredentialsDialog(Profile)})
+     * - skipped for a double-click landing on an empty row (past the last actual entry),
+     * or one whose {@link Profile} has no matching {@link Login} to check the role of.
      *
      * @return the built row
      */
@@ -127,11 +150,94 @@ public final class ProfilesTab extends EntityTab<Profile> {
         final TableRow<Profile> row = new TableRow<>();
 
         row.setOnMouseClicked(event -> {
-            if (event.getClickCount() == 2 && !row.isEmpty()) showCredentialsDialog(row.getItem());
+
+            if (event.getClickCount() != 2 || row.isEmpty()) return;
+
+            final Profile profile = row.getItem();
+
+            if (profile.getLoginCredentials().map(Login::isStudent).orElse(false)) {
+                showStatisticsDialog(profile);
+            } else {
+                showCredentialsDialog(profile);
+            }
+
         });
 
         return row;
 
+    }
+
+    /**
+     * Shows a {@link Role#STUDENT}'s own statistics in a blocking dialog: their total
+     * {@link Profile#getSemesters()}, and the total {@link Exam}s and {@link Module}s
+     * reachable across all of them (deduplicated the same way {@link StatisticsTab}'s own
+     * per-type panels are, in case a shared module links more than one of the student's
+     * semesters), their average grade in {@link SemesterType#UNDER_GRADUATE_STUDY} and
+     * {@link SemesterType#GRADUATE_STUDY} computed separately (a semester with neither
+     * type assigned yet counts toward neither), {@link StatisticsTab}'s own
+     * "Export All Exams" menu button, reused unmodified but scoped down to just this one
+     * student's own semesters, and, the same as {@link #showCredentialsDialog(Profile)}
+     * shows for any other role, this student's own login credentials in plaintext (see
+     * {@link Login#getPassword()}) - admin-only, since this whole tab is (see this
+     * class's own Javadoc).
+     *
+     * @param profile the student whose statistics to show
+     */
+    private static void showStatisticsDialog(final Profile profile) {
+
+        final List<Semester> semesters = profile.getSemesters().stream()
+                .map(profile::getSemester)
+                .flatMap(Optional::stream)
+                .toList();
+
+        final List<Exam> exams = semesters.stream().flatMap(semester -> semester.getExams().stream()).distinct().toList();
+        final List<Module> modules = semesters.stream().flatMap(semester -> semester.getModules().stream()).distinct().toList();
+
+        final Label credentialsLabel = new Label(profile.getLoginCredentials()
+                .map(login -> "Email: " + login.getEmail() + "\nPassword: " + login.getPassword())
+                .orElse("No login credentials found."));
+
+        final HBox cards = new HBox(16,
+                ExamStatistics.statCard("Semesters", String.valueOf(semesters.size())),
+                ExamStatistics.statCard("Exams", String.valueOf(exams.size())),
+                ExamStatistics.statCard("Modules", String.valueOf(modules.size())),
+                ExamStatistics.statCard("Avg. Grade (Undergraduate)", ExamStatistics.formatGrade(ExamStatistics.averageGrade(averageGradeExams(semesters, SemesterType.UNDER_GRADUATE_STUDY)))),
+                ExamStatistics.statCard("Avg. Grade (Graduate)", ExamStatistics.formatGrade(ExamStatistics.averageGrade(averageGradeExams(semesters, SemesterType.GRADUATE_STUDY))))
+        );
+        cards.setAlignment(Pos.CENTER);
+
+        final HBox exportBar = new HBox(StatisticsTab.exportAllExamsButton(semesters));
+        exportBar.setAlignment(Pos.CENTER_RIGHT);
+
+        final VBox content = new VBox(16, credentialsLabel, cards, exportBar);
+        content.setPadding(new Insets(16));
+
+        final Dialog<ButtonType> dialog = new Dialog<>();
+        dialog.setTitle(profile.getInformation().getFullName() + " — Statistics");
+        dialog.getDialogPane().setContent(content);
+        dialog.getDialogPane().getButtonTypes().add(ButtonType.CLOSE);
+        Theme.style(dialog.getDialogPane());
+
+        dialog.showAndWait();
+
+    }
+
+    /**
+     * Resolves the exams to average across for {@link #showStatisticsDialog(Profile)}'s
+     * own {@code type}-specific stat card: every exam reachable from {@code semesters}
+     * filtered down to those classified as {@code type}, deduplicated in case a shared
+     * {@link Module} links more than one of them.
+     *
+     * @param semesters the student's own semesters to filter and flatten
+     * @param type the study type to filter down to
+     * @return the resolved exams
+     */
+    private static List<Exam> averageGradeExams(final List<Semester> semesters, final SemesterType type) {
+        return semesters.stream()
+                .filter(semester -> semester.getType() == type)
+                .flatMap(semester -> semester.getExams().stream())
+                .distinct()
+                .toList();
     }
 
     /**

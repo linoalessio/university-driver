@@ -28,8 +28,11 @@ import java.util.List;
  *
  * <p>Unlike {@link de.lino.thma.ui.tab.SemestersTab}, this tab is never scoped to the
  * logged-in {@link de.lino.thma.domain.entity.profile.Profile}: a {@link Module} belongs
- * to no profile, only to whichever semesters link it, so every profile sees and can
- * manage the same global set of modules.
+ * to no profile, only to whichever semesters link it, so every profile sees the same
+ * global set of modules - but only an admin account (see
+ * {@link de.lino.thma.domain.entity.profile.login.Login#isAdmin()}) can manage it. A
+ * student account sees the same table, editable columns included, but neither the "Add
+ * Module" nor "Remove Module" button - see {@link #ModulesTab(boolean)}.
  *
  * <p>Name, tag and credits are editable in place; the id is not.
  *
@@ -42,12 +45,23 @@ import java.util.List;
 public final class ModulesTab extends EntityTab<Module> {
 
     /**
-     * Builds the "Modules" tab: a table of every registered module, sorted by id, with
-     * add/remove actions.
+     * Whether the logged-in account is an admin; see {@link #ModulesTab(boolean)}.
      */
-    public ModulesTab() {
+    private final boolean isAdmin;
+
+    /**
+     * Builds the "Modules" tab: a table of every registered module, sorted by id, with
+     * add/remove actions if, and only if, {@code isAdmin} - a student account may view
+     * the table, and even edit a module's name, tag or credits in place, but not add a
+     * new one or remove an existing one.
+     *
+     * @param isAdmin whether the logged-in account is an admin
+     */
+    public ModulesTab(final boolean isAdmin) {
 
         super("Modules");
+
+        this.isAdmin = isAdmin;
 
         this.rebuild();
         GuiSupport.refreshOnSelect(this, this::rebuild);
@@ -57,7 +71,7 @@ public final class ModulesTab extends EntityTab<Module> {
     /**
      * (Re)builds this tab's entire content from the current state of
      * {@link EntityFactory}'s cache: the table of every registered module, sorted by id,
-     * with add/remove actions. Safe to call more than once - see
+     * with add/remove actions if {@link #isAdmin}. Safe to call more than once - see
      * {@link GuiSupport#refreshOnSelect(Tab, Runnable)}.
      */
     private void rebuild() {
@@ -74,8 +88,9 @@ public final class ModulesTab extends EntityTab<Module> {
                 ColumnSpec.editable("Credits", m -> String.valueOf(m.getCredits()), (m, v) -> m.setCredits(GuiSupport.parseInt(v, "Credits")))
         );
 
-        this.buildContent(table, columns, "Modules", "+ Add Module", () -> addModuleDialog(table),
-                "− Remove Module", module -> removeModule(module, table));
+        this.buildContent(table, columns, columns, "Modules",
+                this.isAdmin ? "+ Add Module" : null, this.isAdmin ? () -> addModuleDialog(table) : null,
+                this.isAdmin ? "− Remove Module" : null, this.isAdmin ? module -> removeModule(module, table) : null);
 
     }
 

@@ -38,11 +38,10 @@ import java.util.List;
  * semester down to the ones {@code currentProfile} owns by checking membership in that
  * list.
  *
- * <p>An admin account (see {@link de.lino.thma.domain.entity.profile.login.Login#isAdmin()})
- * bypasses that filtering entirely and sees every registered semester instead, since an
- * admin also owns a {@link Profile} of its own (the first ever registered one, see
- * {@link de.lino.thma.ui.LoginGui}) but is not scoped down to just that one's own
- * semesters the way a student is.
+ * <p>This tab is never built for an admin account (see
+ * {@link de.lino.thma.domain.entity.profile.login.Login#isAdmin()}) -
+ * {@link de.lino.thma.UniversityGui} leaves it out of the main window entirely for one,
+ * the same way {@link ProfilesTab} is left out for a non-admin.
  *
  * <p>Each nested tab is a {@link SemesterDetailTab}, itself a further-nested tab pane
  * scoping that semester's linked modules, exams and statistics - modules themselves are
@@ -58,30 +57,21 @@ public final class SemestersTab extends Tab {
 
     /**
      * The logged-in account's own profile, or {@code null} if it has none - see
-     * {@link #SemestersTab(Profile, boolean)}.
+     * {@link #SemestersTab(Profile)}.
      */
     private final Profile currentProfile;
 
     /**
-     * Whether the logged-in account is an admin, bypassing the per-profile filtering
-     * entirely - see {@link #SemestersTab(Profile, boolean)}.
-     */
-    private final boolean isAdmin;
-
-    /**
      * Builds the "Semesters" tab: one nested {@link SemesterDetailTab} per semester
-     * {@code currentProfile} owns (or every registered semester, if {@code isAdmin}),
-     * sorted alphabetically, with add/remove actions.
+     * {@code currentProfile} owns, sorted alphabetically, with add/remove actions.
      *
      * @param currentProfile the logged-in account's own profile, or {@code null} if it has none
-     * @param isAdmin whether the logged-in account is an admin, bypassing the per-profile filtering entirely
      */
-    public SemestersTab(final Profile currentProfile, final boolean isAdmin) {
+    public SemestersTab(final Profile currentProfile) {
 
         super("Semesters");
 
         this.currentProfile = currentProfile;
-        this.isAdmin = isAdmin;
 
         this.rebuild();
         GuiSupport.refreshOnSelect(this, this::rebuild);
@@ -91,14 +81,13 @@ public final class SemestersTab extends Tab {
     /**
      * (Re)builds this tab's entire content from the current state of
      * {@link EntityFactory}'s cache: one nested {@link SemesterDetailTab} per semester
-     * {@link #currentProfile} owns (or every registered semester, if {@link #isAdmin}),
-     * sorted alphabetically, with add/remove actions. Safe to call more than once - see
-     * {@link GuiSupport#refreshOnSelect(Tab, Runnable)}.
+     * {@link #currentProfile} owns, sorted alphabetically, with add/remove actions. Safe
+     * to call more than once - see {@link GuiSupport#refreshOnSelect(Tab, Runnable)}.
      */
     private void rebuild() {
 
         final List<Semester> semesters = EntityFactory.getInstance().<Semester>getEntities(EntityType.SEMESTERS).stream()
-                .filter(semester -> this.isAdmin || (this.currentProfile != null && this.currentProfile.getSemesters().contains(semester.getId())))
+                .filter(semester -> this.currentProfile != null && this.currentProfile.getSemesters().contains(semester.getId()))
                 .sorted(Comparator.comparing(Semester::getName))
                 .toList();
 

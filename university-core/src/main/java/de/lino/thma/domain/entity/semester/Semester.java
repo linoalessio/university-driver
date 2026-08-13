@@ -66,13 +66,13 @@ public class Semester extends Serialized {
      * recorded in the owning {@link Profile#getSemesters()}.
      *
      * @param profile the profile this semester is owned by
-     * @param name the semester's name
+     * @param id the semester's id
      * @param modules the ids of the modules taught during this semester
      * @throws NullPointerException if {@code profile}, {@code name} or {@code modules} is {@code null}
      */
-    public Semester(final Profile profile, final String name, final Integer... modules) {
+    public Semester(final Profile profile, final String id, final Integer... modules) {
 
-        this.id = profile.getInformation().getEmailAddress() + ";" + name;
+        this.id = profile.getInformation().getEmailAddress() + ";" + id;
 
         this.modules = new CopyOnWriteArrayList<>(Arrays.asList(Objects.requireNonNull(modules, "@Semester.init: modules must not be null")));
         this.exams = new CopyOnWriteArrayList<>();

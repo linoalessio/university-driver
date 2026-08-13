@@ -93,16 +93,20 @@ public abstract class EntityTab<T> extends Tab {
      * {@link #buildContent(TableView, List, String, String, Runnable, String, Consumer)}
      * does, except the exported file's columns ({@code exportColumns}) need not match
      * the ones actually shown in {@code table} - e.g. {@link de.lino.thma.ui.tab.ProfilesTab}
-     * exports a "Password" column it never renders in the table itself.
+     * exports a "Password" column it never renders in the table itself. {@code addLabel}
+     * and {@code onAdd} may both be {@code null} to leave the add button out entirely,
+     * the same way {@code removeLabel} and {@code onRemove} already could - e.g.
+     * {@link de.lino.thma.ui.tab.ModulesTab} leaves out both its add and remove buttons
+     * for a student account, which may view but not manage the registered modules.
      *
      * @param table the table to display in the tab, already populated with data
      * @param columns the table's own visible columns, built via {@link GuiSupport#toColumns(List, TableView)}
      * @param exportColumns the columns {@code exportTitle}'s export is built from, independent of {@code columns}
      * @param exportTitle the exported file's document title and base file name
-     * @param addLabel the label of the toolbar's add button
-     * @param onAdd invoked when the add button is pressed, to open the entity-specific creation dialog
-     * @param removeLabel the label of the toolbar's remove button
-     * @param onRemove invoked with the selected row when the remove button is pressed, to remove it after confirmation
+     * @param addLabel the label of the toolbar's add button, or {@code null} to leave it out
+     * @param onAdd invoked when the add button is pressed, to open the entity-specific creation dialog; {@code null} to leave the button out
+     * @param removeLabel the label of the toolbar's remove button, or {@code null} to leave it out
+     * @param onRemove invoked with the selected row when the remove button is pressed, to remove it after confirmation; {@code null} to leave the button out
      */
     protected final void buildContent(
             final TableView<T> table,
@@ -119,12 +123,18 @@ public abstract class EntityTab<T> extends Tab {
         table.setEditable(true);
         table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_ALL_COLUMNS);
 
-        final Button addButton = new Button(addLabel);
-        addButton.getStyleClass().add("button-primary");
-        addButton.setOnAction(event -> onAdd.run());
-
-        final HBox toolbar = new HBox(8, GuiSupport.exportButton(exportTitle, table, exportColumns), addButton);
+        final HBox toolbar = new HBox(8, GuiSupport.exportButton(exportTitle, table, exportColumns));
         toolbar.getStyleClass().add("toolbar");
+
+        if (onAdd != null) {
+
+            final Button addButton = new Button(addLabel);
+            addButton.getStyleClass().add("button-primary");
+            addButton.setOnAction(event -> onAdd.run());
+
+            toolbar.getChildren().add(addButton);
+
+        }
 
         if (onRemove != null) {
 
