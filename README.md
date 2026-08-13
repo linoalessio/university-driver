@@ -9,20 +9,43 @@ University Driver is a desktop app for tracking a university career: semesters, 
 modules taught in each, their exams and grades, and the statistics that fall out of
 them — undergraduate and graduate study tracked side by side. Built with JavaFX on
 JDK 21, backed by a local JSON file database via [`database-driver`](https://github.com/linoalessio/database-driver-v2),
-with PDF, Excel and full-database export built in.
+with PDF, Excel, CSV/JSON and full-database export built in, and separate Student and
+Admin roles governing which tabs and actions are available.
 
 ## Features
 
+Every session starts at a login screen; **"Register"** lets anyone without an account
+create one on the spot. The very first account ever registered becomes an **Admin**;
+every account after that is a **Student**, and self-registration can never grant Admin
+to anyone else — the only way to promote someone is for an existing Admin to create
+their account as one from the Profiles tab. Which tabs an account sees, and what each
+one lets it do, is driven entirely by that one **Role**:
+
+### Student
+
 | **Area**       | **What it does**                                                                                                                                                                                             |
 |-----------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| **Login / Register** | Every session starts at a login screen; "Register" lets anyone without an account create one on the spot. The very first account ever registered becomes an **Admin**; every account after that is a **Student**, and self-registration can never grant Admin to anyone else. |
-| **Profiles**    | Admin-only tab listing every student, with their personal details editable in place. Double-clicking a row reveals that student's login credentials, password included in plaintext; the tab's own export includes a "Password" column too — both admin-only, since the tab itself is. |
-| **Modules**     | A global catalogue of course modules (name, tag, credit value), visible to every account regardless of role, created once and linked to whichever semesters teach them.                                    |
-| **Semesters**   | One tab per semester, each with its own nested view of linked modules, that semester's exams, and semester-scoped statistics — plus a rename action and a retroactive undergraduate/graduate assignment used to group semesters in the Statistics tab. A student only ever sees (and creates) their own semesters; an Admin sees every semester across every student. |
-| **Exams**       | Belong to a semester's modules — name, examiner, date, credits, attempt number and grade, all editable in place.                                                                                            |
-| **Statistics**  | Undergraduate and graduate study shown side by side, each with summary stat cards and a per-semester breakdown table, plus a combined **"Export All Exams"** action producing a single grouped, official-transcript-style document — scoped to the logged-in student's own semesters, or every semester for an Admin. |
-| **Exports**     | Available from every table — PDF (Apache PDFBox) and Excel `.xlsx` (Apache POI), styled consistently (shaded header row, bordered cells, banded rows), plus a grouped transcript variant with a closing grading-scale legend. Every export lands in the current user's **Downloads** folder. |
-| **Top bar**     | A **"Data"** dropdown groups the one-click zipped database export/import; a **"Profile"** dropdown groups the light/dark theme toggle and logout, applied consistently across the main window and every dialog. |
+| **Modules**     | Views the global module catalogue (name, tag, credit value) and may edit those three fields in place — cannot add a new module or remove an existing one.                                                  |
+| **Semesters**   | One tab per *own* semester (never another student's), each with its own nested view of linked modules, that semester's exams, and semester-scoped statistics — plus a rename action and a retroactive undergraduate/graduate assignment used to group semesters in the Statistics tab. |
+| **Exams**       | Created and graded from within the owning semester's own nested tab — name, examiner, date, credits, attempt number and grade, all editable in place. No system-wide exam list; a student only ever sees exams reachable through their own semesters. |
+| **Statistics**  | Undergraduate and graduate study shown side by side, scoped to the student's own semesters — each with summary stat cards and a per-semester breakdown table, plus a combined **"Export All Exams"** action producing a single grouped, official-transcript-style document of just those semesters. |
+
+### Admin
+
+| **Area**       | **What it does**                                                                                                                                                                                             |
+|-----------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Profiles**    | Admin-only tab listing every student, with their personal details editable in place. Double-clicking a **Student** row opens that student's own statistics dialog (their semester/exam/module totals, undergraduate/graduate average grade, and the same scoped "Export All Exams" action) followed by their login credentials in plaintext; double-clicking another **Admin** row shows just its credentials. The tab's own export includes a "Password" column too — both admin-only, since the tab itself is. |
+| **Modules**     | Same global catalogue a student sees, plus **"Add Module"** and **"Remove Module"** actions — removing one unlinks it from every semester that teaches it first.                                           |
+| **Exams**       | Admin-only tab listing every exam registered system-wide, independent of who it belongs to, with the profile(s) and semester(s) it's reachable through resolved per row, and a remove action — no add action, since an exam is only ever created scoped to one semester's own modules. |
+| **Semesters**   | No dedicated "Semesters" tab for an Admin (there's no single semester of their own to show); instead every registered semester across every student is reachable, grouped by name, from the Statistics tab below. |
+| **Statistics**  | Replaced entirely by two admin-only sections: an **Admin Overview** of system-wide profile/semester/exam/module counts, and a **"Semesters by Name"** panel grouping every same-named semester across all students (e.g. every student's own "WS23/24") into one row, with its combined profiles/modules/exams listed in a detail view and a single **"Remove Semester"** action deleting it — and every exam sat during it — for every student who owns one at once. |
+
+### Shared by every account
+
+| **Area**       | **What it does**                                                                                                                                                                                             |
+|-----------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Exports**     | Available from every table — PDF (Apache PDFBox), Excel `.xlsx` (Apache POI), CSV and JSON — styled consistently where formatting applies (shaded header row, bordered cells, banded rows), plus a grouped transcript variant (PDF/Excel/CSV/JSON) with a closing grading-scale legend. Every export lands in the current user's **Downloads** folder. |
+| **Top bar**     | A **"Data"** dropdown groups the one-click zipped database export/import (available to every account, not just Admin); a **"Profile"** dropdown groups the light/dark theme toggle and logout, applied consistently across the main window and every dialog. The chosen theme is persisted to disk and restored on the next launch. |
 
 Every tab reads and writes through the same in-memory entity cache, and rebuilds
 itself from scratch whenever it becomes the selected tab, so a change made in one tab
@@ -156,8 +179,8 @@ credentials to configure. If you already have an existing `config/` folder from 
 previous run of this project, `cp -R` it into place instead of creating these files
 by hand.
 
-Every export (PDF, Excel, database backup) is written to the current user's
-**Downloads** folder.
+Every export (PDF, Excel, CSV, JSON, database backup) is written to the current
+user's **Downloads** folder.
 
 --- ---
 
@@ -199,9 +222,11 @@ de.lino.thma
 │       └── module               Module, Exam
 ├── ui
 │   ├── LoginGui                the login/register screen shown before the main window
-│   ├── helper                  EntityTab, ColumnSpec, GuiSupport, Theme
-│   ├── tab                     top-level tabs: Profiles (admin-only), Modules, Semesters, Statistics
-│   └── subtab                  nested per-semester tabs: Modules, Exams, Statistics
+│   ├── helper                  EntityTab, ColumnSpec, GuiSupport, Theme (persisted light/dark)
+│   ├── tab                     top-level tabs: Profiles (admin-only), Modules, Exams (admin-only),
+│   │                           Semesters (student-only), Statistics (role-dependent), ExamStatistics (shared stat-card/grade helpers)
+│   └── subtab                  nested per-semester tabs: SemesterDetailTab (rename + study-type toolbar),
+│                               SemesterModulesTab, SemesterExamsTab, SemesterStatisticsTab
 └── utility                     Constraints, Serialized, MultiTaskingFactory, Application lifecycle
 ```
 
