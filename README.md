@@ -6,11 +6,12 @@
 ![Platform](https://img.shields.io/badge/Platform-macOS%20(Apple%20Silicon)%20%7C%20Windows-lightgrey)
 
 University Driver is a desktop app for tracking a university career: semesters, the
-modules taught in each, their exams and grades, and the statistics that fall out of
-them — undergraduate and graduate study tracked side by side. Built with JavaFX on
-JDK 21, backed by a local JSON file database via [`database-driver`](https://github.com/linoalessio/database-driver-v2),
-with PDF, Excel, CSV/JSON and full-database export built in, and separate Student and
-Admin roles governing which tabs and actions are available.
+modules taught in each, their exams and grades, each semester's own weekly class
+schedule, and the statistics that fall out of them — undergraduate and graduate study
+tracked side by side. Built with JavaFX on JDK 21, backed by a local JSON file database
+via [`database-driver`](https://github.com/linoalessio/database-driver-v2), with PDF,
+Excel, CSV/JSON and full-database export built in, and separate Student and Admin
+roles governing which tabs and actions are available.
 
 ## Features
 
@@ -26,8 +27,9 @@ one lets it do, is driven entirely by that one **Role**:
 | **Area**       | **What it does**                                                                                                                                                                                             |
 |-----------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | **Modules**     | Views the global module catalogue (name, tag, credit value) and may edit those three fields in place — cannot add a new module or remove an existing one.                                                  |
-| **Semesters**   | One tab per *own* semester (never another student's), each with its own nested view of linked modules, that semester's exams, and semester-scoped statistics — plus a rename action and a retroactive undergraduate/graduate assignment used to group semesters in the Statistics tab. |
+| **Semesters**   | One tab per *own* semester (never another student's), each with its own nested view of linked modules, that semester's exams, its own weekly **Scheduler**, and semester-scoped statistics — plus a rename action and a retroactive undergraduate/graduate assignment used to group semesters in the Statistics tab. |
 | **Exams**       | Created and graded from within the owning semester's own nested tab — name, examiner, date, credits, attempt number and grade, all editable in place. No system-wide exam list; a student only ever sees exams reachable through their own semesters. |
+| **Scheduler**   | A semester starts with no scheduler; **"+ Create Scheduler"** builds an empty one. Once created, its **"Periods"** sub-tab defines the day's time slots — each tagged Lecture or Break, added one at a time or all at once via **"Period Layout"** (a named preset, e.g. "Winter-Semester", pulled from `table.pdf`'s own six-period timetable) — and its **"Time Table"** sub-tab lays out the week the same way `table.pdf` does: one row per period, one column per weekday, each occupied cell showing a lecture's module tag, room and professor. Lectures are added/removed/edited (double-click a cell to reconfigure it in place) from a dialog restricted to that semester's own linked modules; a period can only be removed or turned into a break once nothing is still scheduled into it. A dedicated **"Export"** button renders the exact on-screen grid as PDF or CSV. |
 | **Statistics**  | Undergraduate and graduate study shown side by side, scoped to the student's own semesters — each with summary stat cards and a per-semester breakdown table, plus a combined **"Export All Exams"** action producing a single grouped, official-transcript-style document of just those semesters. |
 
 ### Admin
@@ -44,7 +46,7 @@ one lets it do, is driven entirely by that one **Role**:
 
 | **Area**       | **What it does**                                                                                                                                                                                             |
 |-----------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| **Exports**     | Available from every table — PDF (Apache PDFBox), Excel `.xlsx` (Apache POI), CSV and JSON — styled consistently where formatting applies (shaded header row, bordered cells, banded rows), plus a grouped transcript variant (PDF/Excel/CSV/JSON) with a closing grading-scale legend. Every export lands in the current user's **Downloads** folder. |
+| **Exports**     | Available from every table — PDF (Apache PDFBox), Excel `.xlsx` (Apache POI), CSV and JSON — styled consistently where formatting applies (shaded header row, bordered cells, banded rows), plus a grouped transcript variant (PDF/Excel/CSV/JSON) with a closing grading-scale legend. The Scheduler's own Time Table export is the one exception, offering just PDF and CSV, since it isn't row/column data in the same sense as the rest. Every export lands in the current user's **Downloads** folder. |
 | **Top bar**     | A **"Data"** dropdown groups the one-click zipped database export/import (available to every account, not just Admin); a **"Profile"** dropdown groups the light/dark theme toggle and logout, applied consistently across the main window and every dialog. The chosen theme is persisted to disk and restored on the next launch. |
 
 Every tab reads and writes through the same in-memory entity cache, and rebuilds
@@ -188,7 +190,7 @@ University Driver/
 └── database/
     ├── profiles/
     ├── logins/
-    ├── semesters/
+    ├── semesters/     # a semester's own Scheduler, if it has one, is embedded here — not a section of its own
     ├── modules/
     └── exams/
 ```
@@ -262,15 +264,20 @@ de.lino.thma
 │   └── entity
 │       ├── profile             Profile, Information
 │       │   └── login            Login (email/password/role, hash + admin-only plaintext), Role
-│       ├── semester             Semester, SemesterType
-│       └── module               Module, Exam
+│       ├── semester             Semester (holds an optional Scheduler), SemesterType
+│       ├── module               Module, Exam
+│       └── scheduler            Scheduler, PeriodLayout (named period presets, e.g. "Winter-Semester")
+│           ├── time              SchedulerTime (start/end time + LECTURE/BREAK type)
+│           └── lesson             Lecture, Break
 ├── ui
 │   ├── LoginGui                the login/register screen shown before the main window
-│   ├── helper                  EntityTab, ColumnSpec, GuiSupport, Theme (persisted light/dark)
+│   ├── helper                  EntityTab, ColumnSpec, GuiSupport, Theme (persisted light/dark),
+│   │                           ExamStatistics (shared stat-card/grade helpers)
 │   ├── tab                     top-level tabs: Profiles (admin-only), Modules, Exams (admin-only),
-│   │                           Semesters (student-only), Statistics (role-dependent), ExamStatistics (shared stat-card/grade helpers)
+│   │                           Semesters (student-only), Statistics (role-dependent)
 │   └── subtab                  nested per-semester tabs: SemesterDetailTab (rename + study-type toolbar),
-│                               SemesterModulesTab, SemesterExamsTab, SemesterStatisticsTab
+│                               SemesterModulesTab, SemesterExamsTab, SemesterStatisticsTab,
+│                               SchedulerTab (Periods + Time Table)
 └── utility                     Constraints, Serialized, MultiTaskingFactory, Application lifecycle
 ```
 
