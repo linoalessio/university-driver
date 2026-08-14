@@ -45,6 +45,11 @@ cp "$SCRIPT_DIR/AppIcon.icns" "$ICON"
 xattr -cr "$STAGE" "$ICON"
 
 echo "==> Running jpackage"
+# --main-jar + --main-class together make jpackage launch via `java -cp <jar> <class>`,
+# not `java -jar <jar>` - so the jar's own manifest entries (Add-Opens, Enable-Native-Access;
+# see the shade-plugin config in pom.xml) are never read at launch, unlike a plain
+# `java -jar` run. --java-options bakes the same flags straight into the generated
+# native launcher's own JVM invocation instead, which applies regardless of launch mode.
 "$JAVA_HOME/bin/jpackage" \
   --type app-image \
   --input "$STAGE" \
@@ -55,7 +60,9 @@ echo "==> Running jpackage"
   --icon "$ICON" \
   --app-version 1.0 \
   --vendor "Lino Alessio Kauschinger" \
-  --mac-package-name "UniDriver"
+  --mac-package-name "UniDriver" \
+  --java-options "--add-opens=java.base/java.time=ALL-UNNAMED" \
+  --java-options "--enable-native-access=ALL-UNNAMED"
 
 echo "==> Installing the signed app to $DEST_DIR"
 rm -rf "$DEST_DIR/$APP_NAME.app"

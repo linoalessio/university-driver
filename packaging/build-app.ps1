@@ -61,6 +61,11 @@ Copy-Item $Jar $Stage
 
 try {
     Write-Host "==> Running jpackage"
+    # --main-jar + --main-class together make jpackage launch via `java -cp <jar> <class>`,
+    # not `java -jar <jar>` - so the jar's own manifest entries (Add-Opens, Enable-Native-Access;
+    # see the shade-plugin config in pom.xml) are never read at launch, unlike a plain
+    # `java -jar` run. --java-options bakes the same flags straight into the generated
+    # native launcher's own JVM invocation instead, which applies regardless of launch mode.
     & "$JavaHome\bin\jpackage.exe" `
         --type app-image `
         --input $Stage `
@@ -70,7 +75,9 @@ try {
         --main-class de.lino.thma.Launcher `
         --icon "$ScriptDir\AppIcon.ico" `
         --app-version 1.0 `
-        --vendor "Lino Alessio Kauschinger"
+        --vendor "Lino Alessio Kauschinger" `
+        --java-options "--add-opens=java.base/java.time=ALL-UNNAMED" `
+        --java-options "--enable-native-access=ALL-UNNAMED"
     if ($LASTEXITCODE -ne 0) { throw "jpackage failed" }
 
     Write-Host "==> Installing the app to $DestDir"

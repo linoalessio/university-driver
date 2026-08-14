@@ -486,11 +486,11 @@ public final class SchedulerTab extends Tab {
 
         final MenuItem pdfItem = new MenuItem("Export as PDF");
         pdfItem.setOnAction(event -> GuiSupport.promptPageLayout().ifPresent(layout ->
-                exportTimeTable(headers, exportRows(scheduler, periodIds, lectureNumbers, false), "Time Table.pdf", layout)));
+                exportTimeTable(headers, exportRows(scheduler, periodIds, lectureNumbers, false), scheduler.getSemesterName() + "_Time_Table.pdf", layout)));
 
         final MenuItem csvItem = new MenuItem("Export as CSV");
         csvItem.setOnAction(event -> GuiSupport.promptPageLayout().ifPresent(layout ->
-                exportTimeTable(headers, exportRows(scheduler, periodIds, lectureNumbers, true), "Time Table.csv", layout)));
+                exportTimeTable(headers, exportRows(scheduler, periodIds, lectureNumbers, true), scheduler.getSemesterName() + "_Time_Table.csv", layout)));
 
         final MenuButton button = new MenuButton("Export", null, pdfItem, csvItem);
         button.setDisable(periodIds.isEmpty());

@@ -18,8 +18,7 @@ public enum PeriodLayout {
 
     /**
      * The 6 lecture periods and 5 breaks between them from {@code "table.pdf"}'s own
-     * "Zeit" column - the same sample data {@link de.lino.thma.Launcher}'s dummy
-     * scheduler is built from.
+     * "Zeit" column.
      */
     WINTER_SEMESTER("Winter-Semester", List.of(
             new Slot(SchedulerTime.ScheduleType.LECTURE, 8, 0, 9, 30),
