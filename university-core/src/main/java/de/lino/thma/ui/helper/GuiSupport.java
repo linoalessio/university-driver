@@ -1,14 +1,14 @@
 package de.lino.thma.ui.helper;
 
-import de.lino.database.export.transcript.format.PageFormat;
-import de.lino.database.export.transcript.format.PageLayout;
-import de.lino.database.export.transcript.format.PageOrientation;
+import de.lino.database.utility.export.ExportCoordinator;
+import de.lino.database.utils.export.transcript.TranscriptSection;
+import de.lino.database.utils.export.transcript.format.PageFormat;
+import de.lino.database.utils.export.transcript.format.PageLayout;
+import de.lino.database.utils.export.transcript.format.PageOrientation;
 import de.lino.thma.UniversityGui;
 import de.lino.thma.domain.EntityFactory;
 import de.lino.thma.domain.entity.module.Exam;
 import de.lino.thma.domain.entity.profile.Information;
-import de.lino.database.export.ExportCoordinator;
-import de.lino.database.export.transcript.TranscriptSection;
 import de.lino.thma.domain.EntityType;
 import de.lino.thma.utility.Constraints;
 import de.lino.thma.utility.Serialized;

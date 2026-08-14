@@ -1,6 +1,6 @@
 package de.lino.thma;
 
-import de.lino.database.export.ExportCoordinator;
+import de.lino.database.utility.export.ExportCoordinator;
 import de.lino.thma.domain.EntityFactory;
 import de.lino.thma.domain.EntityType;
 import de.lino.thma.domain.entity.profile.Profile;

@@ -1,9 +1,9 @@
 package de.lino.thma.ui.tab;
 
-import de.lino.database.export.ExportCoordinator;
-import de.lino.database.export.transcript.TranscriptLegendEntry;
-import de.lino.database.export.transcript.TranscriptSection;
-import de.lino.database.export.transcript.format.PageLayout;
+import de.lino.database.utility.export.ExportCoordinator;
+import de.lino.database.utils.export.transcript.TranscriptLegendEntry;
+import de.lino.database.utils.export.transcript.TranscriptSection;
+import de.lino.database.utils.export.transcript.format.PageLayout;
 import de.lino.thma.domain.EntityFactory;
 import de.lino.thma.domain.EntityType;
 import de.lino.thma.domain.entity.module.Exam;
