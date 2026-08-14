@@ -1,7 +1,8 @@
-package de.lino.thma.ui.tab;
+package de.lino.thma.ui.helper;
 
 import de.lino.thma.domain.entity.module.Exam;
 import de.lino.thma.ui.subtab.SemesterStatisticsTab;
+import de.lino.thma.ui.tab.StatisticsTab;
 import javafx.geometry.Pos;
 import javafx.scene.control.Label;
 import javafx.scene.layout.VBox;
@@ -34,7 +35,7 @@ public final class ExamStatistics {
      * @param exam the exam to check
      * @return {@code true} if {@code exam} was passed
      */
-    static boolean isPassed(final Exam exam) {
+    public static boolean isPassed(final Exam exam) {
         return exam.getGrade() <= PASSING_GRADE;
     }
 

@@ -3,7 +3,7 @@ package de.lino.thma.ui.subtab;
 import de.lino.thma.domain.entity.module.Exam;
 import de.lino.thma.domain.entity.semester.Semester;
 import de.lino.thma.ui.helper.GuiSupport;
-import de.lino.thma.ui.tab.ExamStatistics;
+import de.lino.thma.ui.helper.ExamStatistics;
 import de.lino.thma.ui.tab.StatisticsTab;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;

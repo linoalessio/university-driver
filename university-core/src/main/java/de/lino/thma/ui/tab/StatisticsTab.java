@@ -12,6 +12,7 @@ import de.lino.thma.domain.entity.profile.Profile;
 import de.lino.thma.domain.entity.semester.Semester;
 import de.lino.thma.domain.entity.semester.SemesterType;
 import de.lino.thma.ui.helper.ColumnSpec;
+import de.lino.thma.ui.helper.ExamStatistics;
 import de.lino.thma.ui.helper.GuiSupport;
 import de.lino.thma.utility.Constraints;
 import javafx.collections.FXCollections;

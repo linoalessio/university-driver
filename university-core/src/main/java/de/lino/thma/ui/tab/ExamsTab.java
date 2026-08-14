@@ -8,6 +8,7 @@ import de.lino.thma.domain.entity.profile.Profile;
 import de.lino.thma.domain.entity.semester.Semester;
 import de.lino.thma.ui.helper.ColumnSpec;
 import de.lino.thma.ui.helper.EntityTab;
+import de.lino.thma.ui.helper.ExamStatistics;
 import de.lino.thma.ui.helper.GuiSupport;
 import javafx.collections.FXCollections;
 import javafx.scene.control.Tab;

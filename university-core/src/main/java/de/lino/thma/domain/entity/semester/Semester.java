@@ -5,6 +5,7 @@ import de.lino.thma.domain.EntityType;
 import de.lino.thma.domain.entity.module.Exam;
 import de.lino.thma.domain.entity.module.Module;
 import de.lino.thma.domain.entity.profile.Profile;
+import de.lino.thma.domain.entity.scheduler.Scheduler;
 import de.lino.thma.utility.Serialized;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -21,7 +22,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
  * A semester, identified by its name, and the {@link Module}
  * ids taught during it.
  */
-@Getter
+@Getter @Setter
 @ToString @EqualsAndHashCode(callSuper = true)
 public class Semester extends Serialized {
 
@@ -51,6 +52,12 @@ public class Semester extends Serialized {
     private final List<Integer> exams;
 
     /**
+     * This semester's own weekly lesson plan, {@code null} until created via
+     * {@link #createScheduler()}.
+     */
+    private Scheduler scheduler;
+
+    /**
      * The kind of study this semester itself is classified under, for statistics
      * grouped by {@link SemesterType} (see {@link de.lino.thma.ui.tab.StatisticsTab}).
      * {@code null} until assigned, e.g. for a semester registered before this field
@@ -72,6 +79,7 @@ public class Semester extends Serialized {
      */
     public Semester(final Profile profile, final String id, final Integer... modules) {
 
+        this.scheduler = null;
         this.id = profile.getInformation().getEmailAddress() + ";" + id;
 
         this.modules = new CopyOnWriteArrayList<>(Arrays.asList(Objects.requireNonNull(modules, "@Semester.init: modules must not be null")));
@@ -94,6 +102,26 @@ public class Semester extends Serialized {
     public Semester addExam(final int examId) {
         this.exams.add(examId);
         return this;
+    }
+
+    /**
+     * Creates this semester's own {@link Scheduler}, named after it, if it does not
+     * have one yet - see {@link #scheduler}. Only ever reachable for a
+     * {@link de.lino.thma.domain.entity.profile.login.Role#STUDENT} account:
+     * {@link de.lino.thma.ui.tab.SemestersTab} (and everything nested under it,
+     * including {@link de.lino.thma.ui.subtab.SchedulerTab}) is never built for an
+     * admin one.
+     *
+     * @return this semester, for chaining
+     */
+    public Semester createScheduler() {
+
+        if (this.scheduler == null) {
+            this.scheduler = new Scheduler(this.getName());
+        }
+
+        return this;
+
     }
 
     /**

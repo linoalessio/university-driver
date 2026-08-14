@@ -140,6 +140,8 @@
                                         <Enable-Native-Access>ALL-UNNAMED</Enable-Native-Access>
                                         <!-- Gson reflectively sets final fields (e.g. Profile.id) when deserializing entities in EntityFactory.syncFromDatabase; silences the matching restricted-mutation warning the same way -->
                                         <Enable-Final-Field-Mutation>ALL-UNNAMED</Enable-Final-Field-Mutation>
+                                        <!-- Gson reflects into java.time.LocalTime's private fields when serializing/deserializing a Scheduler's SchedulerTime entries; java.base does not open java.time to the unnamed module by default, so without this `java -jar` fails with an InaccessibleObjectException on the first EntityFactory.syncToDatabase() call that touches one -->
+                                        <Add-Opens>java.base/java.time</Add-Opens>
                                     </manifestEntries>
                                 </transformer>
                             </transformers>
@@ -167,6 +169,14 @@
                 <version>0.0.8</version>
                 <configuration>
                     <mainClass>de.lino.thma.UniversityGui</mainClass>
+                    <!-- Gson reflects into java.time.LocalTime's private fields when serializing/deserializing a
+                         Scheduler's SchedulerTime entries; java.base does not open java.time to the unnamed module
+                         by default, so without this EntityFactory.syncToDatabase() fails with an
+                         InaccessibleObjectException the first time it touches one -->
+                    <options>
+                        <option>--add-opens</option>
+                        <option>java.base/java.time=ALL-UNNAMED</option>
+                    </options>
                 </configuration>
             </plugin>
 

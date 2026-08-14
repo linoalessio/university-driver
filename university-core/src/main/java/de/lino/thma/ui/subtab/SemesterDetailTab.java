@@ -32,10 +32,10 @@ import java.util.Arrays;
  * it shows a toolbar for renaming this semester (see {@link #renameSemesterDialog(Semester, Tab, TabPane)})
  * and retroactively assigning its own {@link SemesterType} (see {@link #studyTypeBox(Semester)}),
  * above a further-nested {@link TabPane} of {@link SemesterModulesTab},
- * {@link SemesterExamsTab} and {@link SemesterStatisticsTab}, all scoped to this one
- * {@link Semester}. Modules are registered independently of any semester in
- * {@link ModulesTab} and only linked here; exams, however, are only ever shown or
- * created nested inside the semester they belong to.
+ * {@link SemesterExamsTab}, {@link SemesterStatisticsTab} and {@link SchedulerTab}, all
+ * scoped to this one {@link Semester}. Modules are registered independently of any
+ * semester in {@link ModulesTab} and only linked here; exams and the scheduler, however,
+ * are only ever shown or created nested inside the semester they belong to.
  */
 public final class SemesterDetailTab extends Tab {
 
@@ -46,8 +46,8 @@ public final class SemesterDetailTab extends Tab {
 
     /**
      * Builds this semester's own tab: a rename/study-type toolbar above a nested
-     * {@link TabPane} of {@link SemesterModulesTab}, {@link SemesterExamsTab} and
-     * {@link SemesterStatisticsTab}, all scoped to {@code semester}.
+     * {@link TabPane} of {@link SemesterModulesTab}, {@link SemesterExamsTab},
+     * {@link SemesterStatisticsTab} and {@link SchedulerTab}, all scoped to {@code semester}.
      *
      * @param semester the semester this tab is scoped to
      * @param semesterTabs the parent tab pane this tab lives in, re-sorted alphabetically after a rename (see {@link #renameSemesterDialog(Semester, Tab, TabPane)})
@@ -59,7 +59,7 @@ public final class SemesterDetailTab extends Tab {
         this.semester = semester;
 
         final TabPane tabs = new TabPane(
-                new SemesterModulesTab(semester), new SemesterExamsTab(semester), new SemesterStatisticsTab(semester)
+                new SemesterModulesTab(semester), new SemesterExamsTab(semester), new SemesterStatisticsTab(semester), new SchedulerTab(semester)
         );
         tabs.setTabClosingPolicy(TabPane.TabClosingPolicy.UNAVAILABLE);
 
