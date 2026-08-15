@@ -37,6 +37,23 @@ public enum PeriodLayout {
             new Slot(SchedulerTime.ScheduleType.BREAK, 16, 50, 17, 0),
 
             new Slot(SchedulerTime.ScheduleType.LECTURE, 17, 0, 18, 30)
+    )),
+
+    SUMMER_SEMESTER("Summer-Semester", List.of(
+            new Slot(SchedulerTime.ScheduleType.LECTURE, 8, 0, 9, 30),
+            new Slot(SchedulerTime.ScheduleType.BREAK, 9, 30, 9, 45),
+
+            new Slot(SchedulerTime.ScheduleType.LECTURE, 9, 45, 11, 15),
+            new Slot(SchedulerTime.ScheduleType.BREAK, 11, 15, 13, 0),
+            new Slot(SchedulerTime.ScheduleType.BREAK, 13, 0, 13, 40),
+
+            new Slot(SchedulerTime.ScheduleType.LECTURE, 13, 40, 15, 10),
+            new Slot(SchedulerTime.ScheduleType.BREAK, 15, 10, 15, 20),
+
+            new Slot(SchedulerTime.ScheduleType.LECTURE, 15, 20, 16, 50),
+            new Slot(SchedulerTime.ScheduleType.BREAK, 16, 50, 17, 0),
+
+            new Slot(SchedulerTime.ScheduleType.LECTURE, 17, 0, 18, 30)
     ));
 
     /**
