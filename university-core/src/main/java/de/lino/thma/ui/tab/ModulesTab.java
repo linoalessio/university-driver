@@ -31,10 +31,11 @@ import java.util.List;
  * to no profile, only to whichever semesters link it, so every profile sees the same
  * global set of modules - but only an admin account (see
  * {@link de.lino.thma.domain.entity.profile.login.Login#isAdmin()}) can manage it. A
- * student account sees the same table, editable columns included, but neither the "Add
- * Module" nor "Remove Module" button - see {@link #ModulesTab(boolean)}.
+ * student account sees the same table, but with every column read-only and neither the
+ * "Add Module" nor "Remove Module" button - see {@link #ModulesTab(boolean)}.
  *
- * <p>Name, tag and credits are editable in place; the id is not.
+ * <p>For an admin account, name, tag and credits are editable in place; the id never
+ * is. For a student account, no column is editable.
  *
  * <p>Rebuilds itself from scratch every time it becomes the selected tab (see
  * {@link GuiSupport#refreshOnSelect(Tab, Runnable)}), so a module added, edited or
@@ -52,8 +53,8 @@ public final class ModulesTab extends EntityTab<Module> {
     /**
      * Builds the "Modules" tab: a table of every registered module, sorted by id, with
      * add/remove actions if, and only if, {@code isAdmin} - a student account may view
-     * the table, and even edit a module's name, tag or credits in place, but not add a
-     * new one or remove an existing one.
+     * the table, but every column is read-only and neither a new module can be added
+     * nor an existing one removed.
      *
      * @param isAdmin whether the logged-in account is an admin
      */
@@ -71,7 +72,8 @@ public final class ModulesTab extends EntityTab<Module> {
     /**
      * (Re)builds this tab's entire content from the current state of
      * {@link EntityFactory}'s cache: the table of every registered module, sorted by id,
-     * with add/remove actions if {@link #isAdmin}. Safe to call more than once - see
+     * with editable columns and add/remove actions if {@link #isAdmin}, read-only
+     * columns and neither action otherwise. Safe to call more than once - see
      * {@link GuiSupport#refreshOnSelect(Tab, Runnable)}.
      */
     private void rebuild() {
@@ -81,11 +83,16 @@ public final class ModulesTab extends EntityTab<Module> {
                 .toList();
         final TableView<Module> table = new TableView<>(FXCollections.observableArrayList(modules));
 
-        final List<ColumnSpec<Module>> columns = List.of(
+        final List<ColumnSpec<Module>> columns = this.isAdmin ? List.of(
                 ColumnSpec.of("Id", m -> GuiSupport.idLabel(m.getId())),
                 ColumnSpec.editable("Name", Module::getName, (m, v) -> m.setName(GuiSupport.requireText(v, "Name"))),
                 ColumnSpec.editable("Tag", Module::getTag, (m, v) -> m.setTag(GuiSupport.requireText(v, "Tag"))),
                 ColumnSpec.editable("Credits", m -> String.valueOf(m.getCredits()), (m, v) -> m.setCredits(GuiSupport.parseInt(v, "Credits")))
+        ) : List.of(
+                ColumnSpec.of("Id", m -> GuiSupport.idLabel(m.getId())),
+                ColumnSpec.of("Name", Module::getName),
+                ColumnSpec.of("Tag", Module::getTag),
+                ColumnSpec.of("Credits", m -> String.valueOf(m.getCredits()))
         );
 
         this.buildContent(table, columns, columns, "Modules",

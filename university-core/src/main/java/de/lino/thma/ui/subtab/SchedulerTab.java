@@ -381,6 +381,7 @@ public final class SchedulerTab extends Tab {
 
         dialog.showAndWait().filter(ButtonType.OK::equals).ifPresent(button -> {
 
+            scheduler.getSchedulerTimes().clear();
             final PeriodLayout layout = layoutBox.getValue();
             final int applied = layout.applyTo(scheduler);
             EntityFactory.getInstance().syncToDatabase();

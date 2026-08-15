@@ -44,7 +44,9 @@ public enum PeriodLayout {
             new Slot(SchedulerTime.ScheduleType.BREAK, 9, 30, 9, 45),
 
             new Slot(SchedulerTime.ScheduleType.LECTURE, 9, 45, 11, 15),
-            new Slot(SchedulerTime.ScheduleType.BREAK, 11, 15, 13, 0),
+            new Slot(SchedulerTime.ScheduleType.BREAK, 11, 15, 11, 30),
+
+            new Slot(SchedulerTime.ScheduleType.LECTURE, 11, 30, 13, 0),
             new Slot(SchedulerTime.ScheduleType.BREAK, 13, 0, 13, 40),
 
             new Slot(SchedulerTime.ScheduleType.LECTURE, 13, 40, 15, 10),
