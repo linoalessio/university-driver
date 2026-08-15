@@ -149,20 +149,21 @@ public final class UniversityGui extends Application {
     }
 
     /**
-     * Builds the top bar carrying the app's title, a "Data" dropdown grouping the
-     * database export (see {@link #exportDatabase()}) and import (see
-     * {@link #importDatabase(Stage, TabPane, Profile, boolean)}) actions, a "Profile"
-     * dropdown grouping the light/dark {@link Theme} toggle and the logout action, and a
-     * quit button closing {@code stage} - closing it this way goes through the same
-     * shutdown path as clicking the window's own close button, so
-     * {@link #main(String[])}'s post-{@code launch} {@link EntityFactory#syncToDatabase()}
-     * still runs.
+     * Builds the top bar carrying the app's title, an admin-only "Data" dropdown
+     * grouping the database export (see {@link #exportDatabase()}) and import (see
+     * {@link #importDatabase(Stage, TabPane, Profile, boolean)}) actions - left out of
+     * {@code bar} entirely for a student account, which has no business exporting or
+     * overwriting the whole local database - a "Profile" dropdown grouping the
+     * light/dark {@link Theme} toggle and the logout action, and a quit button closing
+     * {@code stage} - closing it this way goes through the same shutdown path as
+     * clicking the window's own close button, so {@link #main(String[])}'s post-{@code launch}
+     * {@link EntityFactory#syncToDatabase()} still runs.
      *
      * @param scene the main window's scene, restyled whenever the theme toggle is pressed
      * @param stage the main window, closed when the quit button is pressed, and the owner of the import file chooser
      * @param tabs the tab pane rebuilt from scratch once a database import succeeds
      * @param currentProfile the logged-in account's own profile, or {@code null} if it has none; threaded through to {@link #importDatabase(Stage, TabPane, Profile, boolean)}
-     * @param isAdmin whether the logged-in account is an admin; threaded through to {@link #importDatabase(Stage, TabPane, Profile, boolean)}
+     * @param isAdmin whether the logged-in account is an admin; gates whether the "Data" dropdown is built at all, and threaded through to {@link #importDatabase(Stage, TabPane, Profile, boolean)}
      * @return the built top bar
      */
     private static HBox topBar(final Scene scene, final Stage stage, final TabPane tabs, final Profile currentProfile, final boolean isAdmin) {
@@ -173,21 +174,27 @@ public final class UniversityGui extends Application {
         final Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
 
-        final MenuItem exportDatabaseItem = new MenuItem("⬇ Export Database");
-        exportDatabaseItem.setOnAction(event -> exportDatabase());
-
-        final MenuItem importDatabaseItem = new MenuItem("⬆ Import Database");
-        importDatabaseItem.setOnAction(event -> importDatabase(stage, tabs, currentProfile, isAdmin));
-
-        final MenuButton dataMenu = new MenuButton("Data", null, exportDatabaseItem, importDatabaseItem);
-
         final MenuButton profileMenu = getProfileMenu(scene, stage);
 
         final Button quitButton = new Button("⏻ Quit");
         quitButton.getStyleClass().add("button-danger");
         quitButton.setOnAction(event -> stage.close());
 
-        final HBox bar = new HBox(12, title, spacer, dataMenu, profileMenu, quitButton);
+        final HBox bar = new HBox(12, title, spacer);
+
+        if (isAdmin) {
+
+            final MenuItem exportDatabaseItem = new MenuItem("⬇ Export Database");
+            exportDatabaseItem.setOnAction(event -> exportDatabase());
+
+            final MenuItem importDatabaseItem = new MenuItem("⬆ Import Database");
+            importDatabaseItem.setOnAction(event -> importDatabase(stage, tabs, currentProfile, isAdmin));
+
+            bar.getChildren().add(new MenuButton("Data", null, exportDatabaseItem, importDatabaseItem));
+
+        }
+
+        bar.getChildren().addAll(profileMenu, quitButton);
         bar.getStyleClass().add("top-bar");
         bar.setAlignment(Pos.CENTER_LEFT);
         bar.setPadding(new Insets(10, 16, 10, 16));

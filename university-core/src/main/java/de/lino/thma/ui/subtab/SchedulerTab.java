@@ -1,6 +1,7 @@
 package de.lino.thma.ui.subtab;
 
 import de.lino.database.utility.export.ExportCoordinator;
+import de.lino.database.utils.export.ExportType;
 import de.lino.database.utils.export.transcript.TranscriptSection;
 import de.lino.database.utils.export.transcript.format.PageLayout;
 import de.lino.thma.domain.EntityFactory;
@@ -19,33 +20,16 @@ import javafx.collections.FXCollections;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
-import javafx.scene.control.Button;
-import javafx.scene.control.ButtonType;
-import javafx.scene.control.ComboBox;
-import javafx.scene.control.Dialog;
-import javafx.scene.control.Label;
-import javafx.scene.control.MenuButton;
-import javafx.scene.control.MenuItem;
-import javafx.scene.control.Spinner;
-import javafx.scene.control.Tab;
-import javafx.scene.control.TabPane;
-import javafx.scene.control.TableCell;
-import javafx.scene.control.TableColumn;
-import javafx.scene.control.TableRow;
-import javafx.scene.control.TableView;
-import javafx.scene.control.TextField;
+import javafx.scene.control.*;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 
+import java.nio.file.Path;
 import java.time.DayOfWeek;
 import java.time.LocalTime;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 /**
  * The "Scheduler" sub-tab of one {@link SemesterDetailTab}: {@code semester}'s own
@@ -337,7 +321,7 @@ public final class SchedulerTab extends Tab {
      * Removes {@code period} after confirmation, warning first if any lecture is
      * currently scheduled into it (see {@link Scheduler#removeSchedulerTime(int)},
      * which removes those along with the period itself, the same way
-     * {@link de.lino.thma.ui.tab.ModulesTab#removeModule} warns before unlinking a
+     * {@link de.lino.thma.ui.tab.ModulesTab#removeModule(Module, TableView)} warns before unlinking a
      * module from every semester that teaches it). On confirmation {@code onChange} is
      * run, so the caller can rebuild whatever view is showing {@code scheduler}'s
      * periods or weekly lesson plan.
@@ -484,19 +468,40 @@ public final class SchedulerTab extends Tab {
         final List<String> headers = new ArrayList<>(List.of("Period"));
         WEEK.forEach(day -> headers.add(displayName(day)));
 
-        final MenuItem pdfItem = new MenuItem("Export as PDF");
-        pdfItem.setOnAction(event -> GuiSupport.promptPageLayout().ifPresent(layout ->
-                exportTimeTable(headers, exportRows(scheduler, periodIds, lectureNumbers, false), scheduler.getSemesterName() + "_Time_Table.pdf", layout)));
+        final String fileName = scheduler.getSemesterName().replace(".", "_") + "_Time_Table";
+        final String documentTitle = "Time Table (" +  scheduler.getSemesterName() + ")";
 
-        final MenuItem csvItem = new MenuItem("Export as CSV");
-        csvItem.setOnAction(event -> GuiSupport.promptPageLayout().ifPresent(layout ->
-                exportTimeTable(headers, exportRows(scheduler, periodIds, lectureNumbers, true), scheduler.getSemesterName() + "_Time_Table.csv", layout)));
+        final MenuItem pdfItem = exportAs(headers, scheduler, periodIds, lectureNumbers, fileName, documentTitle, "Export as Excel", ExportType.EXCEL);
 
-        final MenuButton button = new MenuButton("Export", null, pdfItem, csvItem);
+        final MenuItem excelItem = exportAs(headers, scheduler, periodIds, lectureNumbers, fileName, documentTitle, "Export as PDF", ExportType.PDF);
+
+        final MenuItem csvItem = exportAs(headers, scheduler, periodIds, lectureNumbers, fileName, documentTitle, "Export as CSV", ExportType.CSV);
+
+        final MenuItem jsonItem = exportAs(headers, scheduler, periodIds, lectureNumbers, fileName, documentTitle, "Export as Json", ExportType.JSON);
+
+        final MenuItem xmlItem = exportAs(headers, scheduler, periodIds, lectureNumbers, fileName, documentTitle, "Export as XML", ExportType.XML);
+
+        final MenuItem docxItem = exportAs(headers, scheduler, periodIds, lectureNumbers, fileName, documentTitle, "Export as Docx", ExportType.DOCX);
+
+        final MenuButton button = new MenuButton("Export", null, pdfItem, excelItem, csvItem, jsonItem, xmlItem, docxItem);
         button.setDisable(periodIds.isEmpty());
 
         return button;
 
+    }
+
+    private static MenuItem exportAs(
+            final List<String> headers, final Scheduler scheduler, final List<Integer> periodIds
+            , final Map<Integer, Integer> lectureNumbers, final String fileName, final String documentTitle
+            , final String text, final ExportType exportType
+    ) {
+        final MenuItem item = new MenuItem(text);
+        item.setOnAction(event -> GuiSupport.promptPageLayout().ifPresent(layout ->
+                exportTimeTable(headers,
+                        exportRows(scheduler, periodIds, lectureNumbers, exportType == ExportType.CSV), exportType.adjustSuffixToFile(Path.of(fileName)).toString(), documentTitle, layout)
+                )
+        );
+        return item;
     }
 
     /**
@@ -533,13 +538,13 @@ public final class SchedulerTab extends Tab {
      * @param fileName the exported file's name, resolved against {@link Constraints#EXPORT_PATH}
      * @param pageLayout the page format and orientation to render a PDF export at, ignored for CSV
      */
-    private static void exportTimeTable(final List<String> headers, final List<List<String>> rows, final String fileName, final PageLayout pageLayout) {
+    private static void exportTimeTable(final List<String> headers, final List<List<String>> rows, final String fileName, final String documentTitle, final PageLayout pageLayout) {
 
         final TranscriptSection section = new TranscriptSection("", rows);
         final ExportCoordinator coordinator = new ExportCoordinator();
 
         GuiSupport.runExport(() -> coordinator.exportTranscript(
-                "Time Table", headers, List.of(section), "", List.of(), pageLayout, Constraints.EXPORT_PATH.resolve(fileName)
+                documentTitle, headers, List.of(section), "", List.of(), pageLayout, Constraints.EXPORT_PATH.resolve(fileName)
         ), fileName);
 
     }

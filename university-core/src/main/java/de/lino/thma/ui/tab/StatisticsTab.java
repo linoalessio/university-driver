@@ -380,7 +380,7 @@ public final class StatisticsTab extends Tab {
      * One distinct {@link Semester#getName()} shared across one or more profiles' own
      * semesters, resolved from every such semester's combined {@link Semester#getModules()}
      * and {@link Semester#getExams()}, and the {@link Profile} that owns each - built by
-     * {@link #semesterGroupsPanel()} for its table, and read back by
+     * {@link #semesterGroupsPanel(Runnable)} ()} for its table, and read back by
      * {@link #groupDetail(SemesterGroup)} for its detail area.
      *
      * @param name the shared semester name every semester in {@code semesters} was grouped under
@@ -515,7 +515,15 @@ public final class StatisticsTab extends Tab {
         jsonItem.setOnAction(event -> GuiSupport.promptPageLayout().ifPresent(layout ->
                 exportAllExams(".json", layout, semesters)));
 
-        final MenuButton button = new MenuButton("Export All Exams", null, pdfItem, excelItem, csvItem, jsonItem);
+        final MenuItem xmlItem = new MenuItem("Export as XML");
+        xmlItem.setOnAction(event -> GuiSupport.promptPageLayout().ifPresent(layout ->
+                exportAllExams(".xml", layout, semesters)));
+
+        final MenuItem docxItem = new MenuItem("Export as Docx");
+        docxItem.setOnAction(event -> GuiSupport.promptPageLayout().ifPresent(layout ->
+                exportAllExams(".docx", layout, semesters)));
+
+        final MenuButton button = new MenuButton("Export All Exams", null, pdfItem, excelItem, csvItem, jsonItem, xmlItem, docxItem);
         button.getStyleClass().add("button-primary");
 
         return button;

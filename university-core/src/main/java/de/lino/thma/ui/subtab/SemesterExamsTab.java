@@ -13,6 +13,7 @@ import javafx.scene.control.ButtonType;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.DatePicker;
 import javafx.scene.control.Dialog;
+import javafx.scene.control.Label;
 import javafx.scene.control.Spinner;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
@@ -117,10 +118,11 @@ public final class SemesterExamsTab extends EntityTab<Exam> {
         final TextField nameField = new TextField();
         final TextField examinerField = new TextField();
         final DatePicker datePicker = new DatePicker(LocalDate.now());
-        final Spinner<Integer> creditsSpinner = new Spinner<>(1, 30, 5);
-        creditsSpinner.setEditable(true);
-        final Spinner<Integer> attemptSpinner = new Spinner<>(1, 10, 1);
-        final Spinner<Double> gradeSpinner = new Spinner<>(1.0, 5.0, 1.0, 0.1);
+        final Label creditsLabel = new Label("-");
+        moduleBox.valueProperty().addListener((observable, oldValue, newValue) ->
+                creditsLabel.setText(newValue == null ? "-" : String.valueOf(newValue.getCredits())));
+        final Spinner<Integer> attemptSpinner = new Spinner<>(1, 3, 1);
+        final Spinner<Double> gradeSpinner = new Spinner<>(0.7, 5.0, 4.0, 0.1);
         gradeSpinner.setEditable(true);
 
         final GridPane grid = GuiSupport.formGrid(
@@ -128,7 +130,7 @@ public final class SemesterExamsTab extends EntityTab<Exam> {
                 "Name", nameField,
                 "Examiner", examinerField,
                 "Date", datePicker,
-                "Credits", creditsSpinner,
+                "Credits", creditsLabel,
                 "Attempt", attemptSpinner,
                 "Grade", gradeSpinner
         );
@@ -157,7 +159,7 @@ public final class SemesterExamsTab extends EntityTab<Exam> {
                     GuiSupport.epochMillisOf(datePicker.getValue()),
                     nameField.getText().trim(),
                     examinerField.getText().trim(),
-                    creditsSpinner.getValue(),
+                    moduleBox.getValue().getCredits(),
                     attemptSpinner.getValue(),
                     gradeSpinner.getValue()
             );
