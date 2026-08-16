@@ -1,8 +1,8 @@
 package de.lino.thma.domain.entity.module;
 
+import de.lino.database.database.entity.Serialized;
 import de.lino.thma.domain.EntityFactory;
 import de.lino.thma.domain.EntityType;
-import de.lino.thma.utility.Serialized;
 import lombok.*;
 
 import java.io.Serial;

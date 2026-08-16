@@ -1,5 +1,6 @@
 package de.lino.thma.ui.helper;
 
+import de.lino.database.database.entity.Serialized;
 import de.lino.database.utility.export.ExportCoordinator;
 import de.lino.database.utils.export.transcript.TranscriptSection;
 import de.lino.database.utils.export.transcript.format.PageFormat;
@@ -11,7 +12,6 @@ import de.lino.thma.domain.entity.module.Exam;
 import de.lino.thma.domain.entity.profile.Information;
 import de.lino.thma.domain.EntityType;
 import de.lino.thma.utility.Constraints;
-import de.lino.thma.utility.Serialized;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.event.ActionEvent;

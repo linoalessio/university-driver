@@ -1,16 +1,13 @@
 package de.lino.thma.domain.entity.profile;
 
-import com.google.common.collect.Lists;
+import de.lino.database.database.entity.Serialized;
 import de.lino.thma.domain.EntityFactory;
 import de.lino.thma.domain.EntityType;
 import de.lino.thma.domain.entity.profile.login.Login;
 import de.lino.thma.domain.entity.semester.Semester;
-import de.lino.thma.utility.Serialized;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
-import lombok.NonNull;
 import lombok.ToString;
-import org.apache.poi.sl.draw.geom.GuideIf;
 
 import java.io.Serial;
 import java.util.*;

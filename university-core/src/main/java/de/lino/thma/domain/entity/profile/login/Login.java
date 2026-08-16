@@ -1,9 +1,9 @@
 package de.lino.thma.domain.entity.profile.login;
 
+import de.lino.database.database.entity.Serialized;
 import de.lino.thma.domain.EntityFactory;
 import de.lino.thma.domain.EntityType;
 import de.lino.thma.domain.entity.profile.Profile;
-import de.lino.thma.utility.Serialized;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NonNull;

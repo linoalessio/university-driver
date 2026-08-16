@@ -1,12 +1,12 @@
 package de.lino.thma.domain.entity.semester;
 
+import de.lino.database.database.entity.Serialized;
 import de.lino.thma.domain.EntityFactory;
 import de.lino.thma.domain.EntityType;
 import de.lino.thma.domain.entity.module.Exam;
 import de.lino.thma.domain.entity.module.Module;
 import de.lino.thma.domain.entity.profile.Profile;
 import de.lino.thma.domain.entity.scheduler.Scheduler;
-import de.lino.thma.utility.Serialized;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;

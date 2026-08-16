@@ -5,7 +5,6 @@ import de.lino.thma.domain.entity.profile.login.Login;
 import de.lino.thma.domain.entity.module.Exam;
 import de.lino.thma.domain.entity.module.Module;
 import de.lino.thma.domain.entity.semester.Semester;
-import de.lino.thma.utility.Serialized;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NonNull;

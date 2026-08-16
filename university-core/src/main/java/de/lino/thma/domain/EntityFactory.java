@@ -8,9 +8,9 @@ import de.lino.database.database.DatabaseSection;
 import de.lino.database.database.DatabaseType;
 import de.lino.database.database.auth.Credentials;
 import de.lino.database.database.entity.DatabaseEntry;
+import de.lino.database.database.entity.Serialized;
 import de.lino.database.json.JsonDocument;
 import de.lino.thma.utility.Constraints;
-import de.lino.thma.utility.Serialized;
 import de.lino.thma.utility.task.MultiTaskingFactory;
 import lombok.Getter;
 
