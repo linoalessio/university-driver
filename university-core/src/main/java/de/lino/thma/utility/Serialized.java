@@ -1,5 +1,7 @@
 package de.lino.thma.utility;
 
+import de.lino.database.json.JsonDocument;
+
 import java.io.Serial;
 import java.io.Serializable;
 import java.util.List;
@@ -83,6 +85,29 @@ public abstract class Serialized implements Serializable {
      */
     public String keysAsString() {
         return String.join(":", this.keysOf());
+    }
+
+    /**
+     * Serializes this entity to a UTF-8 encoded JSON byte array, wrapping it under a
+     * {@code "serialized"} entry so it can be read back by {@link #fromByteArray(byte[], Class)}.
+     *
+     * @return this entity's serialized form
+     */
+    public byte[] toByteArray() {
+        return new JsonDocument().append("serialized", this).toBytes();
+    }
+
+    /**
+     * Deserializes an entity previously produced by {@link #toByteArray()} into an instance of
+     * the given type.
+     *
+     * @param bytes the serialized form, as produced by {@link #toByteArray()}
+     * @param type  the concrete subclass to deserialize into
+     * @param <T>   the concrete subclass to deserialize into
+     * @return the deserialized entity
+     */
+    public static <T extends Serialized> T fromByteArray(final byte[] bytes, final Class<T> type) {
+        return new JsonDocument(bytes).get("serialized", type);
     }
 
 }
